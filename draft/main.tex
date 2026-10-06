@@ -91,7 +91,7 @@ The primary comparison is
 \lambda > 0,
 \end{equation}
 
-with the same architecture, optimizer, data, and number of updates. The main sweep uses five matched seeds for $\lambda \in \{0, 0.25, 0.5, 1, 2\}$ and trains each model for 4000 updates. For a fixed seed, the baseline and coupled runs therefore share the initialization and sampled training/evaluation batches.
+with the same architecture, optimizer, data, and number of updates. The main sweep uses five matched seeds for $\lambda \in \{0, 0.25, 0.5, 1, 2\}$ and trains each model for 4000 updates. For a fixed seed, the baseline and coupled runs therefore share the initialization and sampled training batches. All runs are evaluated on the same deterministic sequence of validation batches, using 80 batches per checkpoint.
 
 \IfFileExists{figures/fig1.pdf}{
 \begin{figure}[htb!]

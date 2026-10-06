@@ -1,16 +1,21 @@
 # Results
 
-This directory contains the small canonical outputs produced by the training runs.
+This directory contains the small canonical outputs produced by the GPU training runs.
 
-On the compute machine:
+On Minerva:
 
 ```bash
-./compute.sh
+./experiment.sh
 git add results/lambda0.json results/lambda1.json
 git commit -m "update experiment results"
 git push
 ```
 
-The manuscript machine pulls these files and regenerates figures from them with `./build.sh`.
+On the manuscript machine:
 
-Model checkpoints and temporary training artifacts do not belong here.
+```bash
+git pull
+./build.sh
+```
+
+The build regenerates the manuscript figure from these files. Model checkpoints and temporary training artifacts do not belong here.

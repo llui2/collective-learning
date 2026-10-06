@@ -91,13 +91,13 @@ The primary comparison is
 \lambda > 0,
 \end{equation}
 
-with the same architecture, initialization seed, optimizer, data, and number of updates. The repository script \texttt{experiment.sh} runs $\lambda = 0$ and $\lambda = 1$ with otherwise identical defaults.
+with the same architecture, optimizer, data, and number of updates. The main sweep uses five matched seeds for $\lambda \in \{0, 0.25, 0.5, 1, 2\}$ and trains each model for 4000 updates. For a fixed seed, the baseline and coupled runs therefore share the initialization and sampled training/evaluation batches.
 
 \IfFileExists{figures/fig1.pdf}{
 \begin{figure}[htb!]
     \centering
     \includegraphics[width=0.92\linewidth]{figures/fig1.pdf}
-    \caption{Matched training comparison of the ordinary and coupled routers. (a) Validation negative log-likelihood for $\lambda = 0$ and $\lambda = 1$. (b) Difference between the coupled and baseline validation losses at the same evaluation steps. Negative values indicate lower validation loss for the coupled router.}
+    \caption{Validation performance across the coupling sweep. (a) Mean validation negative log-likelihood across five matched seeds; shaded bands give the standard error of the mean. The initialization transient at step 1 is omitted and curves begin at step 200. (b) Paired final loss difference relative to the $\lambda = 0$ run with the same seed. Gray points are individual seeds and the black curve gives the mean with standard error. Negative values indicate lower validation loss than the uncoupled router.}
     \label{fig:performance}
 \end{figure}
 }{}
@@ -114,7 +114,7 @@ D_{\mathrm{KL}}\left(p \,\|\, p^{(0)}\right),
 
 and the norm of the learned interaction matrix. These quantities distinguish a useful loss reduction from a trivial collapse toward one expert or from a coupling term that remains effectively zero.
 
-The first run is only a mechanism test. A positive result should be repeated across seeds and coupling strengths before making a performance claim. Further ablations can then compare the structured form $C = Q M Q^\top$ with a directly learned $C$ and test whether the learned interaction has stable spectral or block structure.
+The multi-seed sweep tests whether any loss change is reproducible and whether it depends systematically on the coupling strength. Further ablations can compare the structured form $C = Q M Q^\top$ with a directly learned $C$ and test whether the learned interaction has stable spectral or block structure.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}

@@ -6,7 +6,7 @@ cd "$repo_root"
 
 n_sweep="$(find results -maxdepth 1 -name 'sweep_lambda*_seed*.json' 2>/dev/null | wc -l | tr -d ' ')"
 
-if [[ "$n_sweep" == "25" ]]; then
+if (( n_sweep >= 25 )); then
   mkdir -p draft/figures
   export MPLBACKEND=Agg
   python3 scripts/fig1.py

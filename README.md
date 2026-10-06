@@ -12,7 +12,7 @@ p  = softmax(Q h + lambda C p0)
 
 with a learned low-rank symmetric metric `M = U diag(m) U^T`. The baseline is `lambda = 0`, so baseline and coupled runs have the same architecture and parameter count.
 
-The main experiment uses five matched seeds, `lambda = 0, 0.25, 0.5, 1, 2`, and 4000 training updates per run. Completed runs are stored independently so the sweep is resumable.
+The main experiment uses five matched seeds, `lambda = 0, 0.25, 0.5, 1, 2`, and 4000 training updates per run. Validation uses the same fixed batch sequence across every run, with 80 batches per checkpoint. Completed runs are stored independently so the sweep is resumable.
 
 ## Minerva: computation
 

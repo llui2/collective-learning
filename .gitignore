@@ -4,6 +4,9 @@ __pycache__/
 .envrc
 .DS_Store
 runs/
+results/*.pt
+results/*.pth
+results/*.ckpt
 draft/figures/
 
 # LaTeX

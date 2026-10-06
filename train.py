@@ -380,7 +380,7 @@ def parse_args():
 def main():
     args = parse_args()
     device = resolve_device(args.device)
-    if args.require_cuda and device.type != "cuda":
+    if args.require_cuda and not torch.cuda.is_available():
         raise RuntimeError("CUDA was required but is not available. Check the NVIDIA driver and PyTorch CUDA build.")
     seed_all(args.seed)
 

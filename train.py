@@ -149,7 +149,7 @@ class CoupledMoE(nn.Module):
         # q_i are the rows of the ordinary router matrix Q.
         q_u = self.router.weight @ self.metric_basis
         c = (q_u * self.metric_weight) @ q_u.transpose(0, 1)
-        return c / math.sqrt(self.metric_rank)
+        return c
 
     def route(self, x):
         logits0 = self.router(x)

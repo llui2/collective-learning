@@ -23,4 +23,4 @@ python3 train.py --smoke
 bash experiment.sh
 ```
 
-Runs are written to `runs/` and ignored by Git. Build the research note with `bash build.sh`.
+Runs are written to `runs/` and ignored by Git. `./experiment.sh` also writes `runs/comparison.csv`, generates `draft/figures/fig1.pdf`, and rebuilds the research note so the figure appears in `draft/main.pdf`.

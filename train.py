@@ -401,7 +401,7 @@ def main():
         weight_decay=args.weight_decay,
     )
     train_gen = torch.Generator().manual_seed(args.seed)
-    eval_gen = torch.Generator().manual_seed(args.seed + 1)
+    eval_gen = torch.Generator().manual_seed(1729)
 
     history = []
     n_params = sum(p.numel() for p in model.parameters())

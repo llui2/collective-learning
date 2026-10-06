@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+.envrc
+.DS_Store
+runs/
+
+# LaTeX
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+draft/main.pdf

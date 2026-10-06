@@ -18,5 +18,4 @@ The baseline is exactly `lambda = 0`. Both conditions contain the same parameter
 
 The first test uses a small decoder-only Transformer on WikiText-2 with byte-level language modeling. The code records validation loss together with routing entropy, expert-load imbalance, `KL(p || p0)`, and the interaction norm.
 
-
-Running `./experiment.sh` produces the matched baseline/coupled histories, `runs/comparison.csv`, and the manuscript figure `draft/figures/fig1.pdf`. The figure compares validation loss directly and plots `L(lambda=1) - L(lambda=0)` at matched evaluation steps.
+Training is run separately on Minerva with `./experiment.sh`, which produces `results/lambda0.json` and `results/lambda1.json`. The local `./build.sh` reads those files, regenerates `draft/figures/fig1.pdf`, and compiles the manuscript.

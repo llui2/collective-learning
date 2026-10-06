@@ -371,6 +371,7 @@ def parse_args():
     parser.add_argument("--weight-decay", type=float, default=0.01)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--require-cuda", action="store_true")
     parser.add_argument("--output", default="")
     parser.add_argument("--smoke", action="store_true")
     return parser.parse_args()
@@ -379,6 +380,8 @@ def parse_args():
 def main():
     args = parse_args()
     device = resolve_device(args.device)
+    if args.require_cuda and device.type != "cuda":
+        raise RuntimeError("CUDA was required but is not available. Check the NVIDIA driver and PyTorch CUDA build.")
     seed_all(args.seed)
 
     if args.smoke:

@@ -2,14 +2,25 @@
 
 Minimal experiments on coupled routing in mixture-of-experts Transformers.
 
-The current model replaces independent expert routing with a learned interaction term
+The router is
 
 ```text
 p0 = softmax(Q h)
-p  = softmax(Q h + lambda C p0)
 C  = Q M Q^T
+p  = softmax(Q h + lambda C p0)
 ```
 
-where `M` is learned jointly with the Transformer. The first experiment compares `lambda = 0` and `lambda > 0` with the same architecture and parameter count on WikiText-2.
+with a learned low-rank symmetric metric `M = U diag(m) U^T`. The baseline is `lambda = 0`, so baseline and coupled runs have the same architecture and parameter count.
 
-See `draft/main.tex` for the model and experimental rationale.
+The first experiment is a small causal Transformer trained on WikiText-2 with four experts and top-2 routing. See `draft/main.tex` for the model and measurements.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python3 train.py --smoke
+bash experiment.sh
+```
+
+Runs are written to `runs/` and ignored by Git. Build the research note with `bash build.sh`.

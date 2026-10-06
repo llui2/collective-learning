@@ -6,14 +6,31 @@ cd "$repo_root"
 
 mkdir -p results
 
-python3 train.py --device cuda --require-cuda \
-  --lambda-coupling 0 \
-  --seed 0 \
-  --output results/lambda0.json
+lambdas=(0 0.25 0.5 1 2)
+seeds=(0 1 2 3 4)
+steps="${STEPS:-4000}"
 
-python3 train.py --device cuda --require-cuda \
-  --lambda-coupling 1 \
-  --seed 0 \
-  --output results/lambda1.json
+total=$(( ${#lambdas[@]} * ${#seeds[@]} ))
+run=0
 
-echo "results written to results/"
+for seed in "${seeds[@]}"; do
+  for lambda in "${lambdas[@]}"; do
+    run=$((run + 1))
+    output="results/sweep_lambda${lambda}_seed${seed}.json"
+
+    if [[ -f "$output" ]]; then
+      echo "[$run/$total] skip lambda=$lambda seed=$seed"
+      continue
+    fi
+
+    echo "[$run/$total] lambda=$lambda seed=$seed steps=$steps"
+    python3 train.py --device cuda --require-cuda \
+      --lambda-coupling "$lambda" \
+      --seed "$seed" \
+      --steps "$steps" \
+      --eval-every 200 \
+      --output "$output"
+  done
+done
+
+echo "sweep complete: $total runs in results/"

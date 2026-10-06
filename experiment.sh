@@ -29,6 +29,7 @@ for seed in "${seeds[@]}"; do
       --seed "$seed" \
       --steps "$steps" \
       --eval-every 200 \
+      --eval-batches 80 \
       --output "$output"
   done
 done

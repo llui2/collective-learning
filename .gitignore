@@ -4,6 +4,7 @@ __pycache__/
 .envrc
 .DS_Store
 runs/
+draft/figures/
 
 # LaTeX
 *.aux

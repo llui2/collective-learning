@@ -3,6 +3,7 @@
 \usepackage[margin=2.3cm]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{graphicx}
 \usepackage{bm}
 \usepackage{hyperref}
 \usepackage[numbers,sort&compress]{natbib}
@@ -91,6 +92,15 @@ The primary comparison is
 \end{equation}
 
 with the same architecture, initialization seed, optimizer, data, and number of updates. The repository script \texttt{experiment.sh} runs $\lambda = 0$ and $\lambda = 1$ with otherwise identical defaults.
+
+\IfFileExists{figures/fig1.pdf}{
+\begin{figure}[htb!]
+    \centering
+    \includegraphics[width=0.92\linewidth]{figures/fig1.pdf}
+    \caption{Matched training comparison of the ordinary and coupled routers. (a) Validation negative log-likelihood for $\lambda = 0$ and $\lambda = 1$. (b) Difference between the coupled and baseline validation losses at the same evaluation steps. Negative values indicate lower validation loss for the coupled router.}
+    \label{fig:performance}
+\end{figure}
+}{}
 
 \section{Measurements}
 

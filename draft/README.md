@@ -17,3 +17,6 @@ with a low-rank symmetric metric `M = U diag(m) U^T`, and use one coupled correc
 The baseline is exactly `lambda = 0`. Both conditions contain the same parameters, so the first experiment isolates whether the interaction changes learning rather than whether a larger model helps.
 
 The first test uses a small decoder-only Transformer on WikiText-2 with byte-level language modeling. The code records validation loss together with routing entropy, expert-load imbalance, `KL(p || p0)`, and the interaction norm.
+
+
+Running `./experiment.sh` produces the matched baseline/coupled histories, `runs/comparison.csv`, and the manuscript figure `draft/figures/fig1.pdf`. The figure compares validation loss directly and plots `L(lambda=1) - L(lambda=0)` at matched evaluation steps.

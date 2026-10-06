@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
 OUT = ROOT / "draft" / "figures" / "fig1.pdf"
-CSV_OUT = RESULTS / "comparison.csv"
+CSV_OUT = ROOT / "draft" / "figures" / "fig1.csv"
 
 
 def load_history(path):

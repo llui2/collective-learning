@@ -8,7 +8,7 @@ mkdir -p results
 
 lambdas=(0 0.25 0.5 1 2)
 seeds=(0 1 2 3 4)
-steps="${STEPS:-4000}"
+steps=4000
 
 total=$(( ${#lambdas[@]} * ${#seeds[@]} ))
 run=0

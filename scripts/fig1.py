@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNS = ROOT / "runs"
+RESULTS = ROOT / "results"
 OUT = ROOT / "draft" / "figures" / "fig1.pdf"
-CSV_OUT = RUNS / "comparison.csv"
+CSV_OUT = RESULTS / "comparison.csv"
 
 
 def load_history(path):
@@ -19,8 +19,8 @@ def load_history(path):
     return {row["step"]: row for row in history}
 
 
-baseline = load_history(RUNS / "lambda0.json")
-coupled = load_history(RUNS / "lambda1.json")
+baseline = load_history(RESULTS / "lambda0.json")
+coupled = load_history(RESULTS / "lambda1.json")
 
 steps = sorted(set(baseline) & set(coupled))
 if not steps:
@@ -30,7 +30,7 @@ loss0 = [baseline[step]["loss"] for step in steps]
 loss1 = [coupled[step]["loss"] for step in steps]
 delta = [b - a for a, b in zip(loss0, loss1)]
 
-RUNS.mkdir(parents=True, exist_ok=True)
+RESULTS.mkdir(parents=True, exist_ok=True)
 with CSV_OUT.open("w", newline="") as handle:
     writer = csv.writer(handle)
     writer.writerow(["step", "baseline_loss", "coupled_loss", "delta_loss"])

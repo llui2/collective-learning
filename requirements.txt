@@ -1,2 +1,3 @@
+torch>=2.2
 -r requirements-compute.txt
 -r requirements-plot.txt

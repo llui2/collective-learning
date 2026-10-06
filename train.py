@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 from torch import nn
 import torch.nn.functional as F
+from tqdm import tqdm
 
 
 VOCAB_SIZE = 256
@@ -406,7 +407,13 @@ def main():
         f"lambda={args.lambda_coupling:g} rank={args.metric_rank}"
     )
 
-    for step in range(1, args.steps + 1):
+    progress = tqdm(
+        range(1, args.steps + 1),
+        desc=f"lambda={args.lambda_coupling:g}",
+        dynamic_ncols=True,
+    )
+
+    for step in progress:
         model.train()
         x, y = get_batch(
             train_data,
@@ -428,18 +435,17 @@ def main():
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
 
+        if step == 1 or step % 20 == 0:
+            progress.set_postfix(train=f"{task_loss.item():.3f}")
+
         if step == 1 or step % args.eval_every == 0 or step == args.steps:
             metrics = evaluate(model, valid_data, args, device, eval_gen)
             metrics["step"] = step
             history.append(metrics)
-            print(
-                f"step={step:5d} "
-                f"val_loss={metrics['loss']:.4f} "
-                f"ppl={metrics['ppl']:.2f} "
-                f"H={metrics['entropy']:.3f} "
-                f"KL={metrics['kl']:.4f} "
-                f"load_cv={metrics['load_cv']:.3f} "
-                f"|C|={metrics['coupling_norm']:.4f}"
+            progress.set_postfix(
+                train=f"{task_loss.item():.3f}",
+                val=f"{metrics['loss']:.3f}",
+                kl=f"{metrics['kl']:.3g}",
             )
 
     result = {

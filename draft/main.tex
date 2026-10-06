@@ -1,0 +1,111 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black}
+
+\title{Coupled routing in mixture-of-experts transformers}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Literature}
+
+Sparse mixture-of-experts (MoE) layers replace a dense feed-forward block by a set of experts and a router that selects a small subset for each token \cite{shazeer2017outrageously,fedus2022switch}. The standard router assigns scores independently from the current token representation and converts them into expert probabilities. Recent work has also introduced recurrent routing and information exchange between experts, including GRAPHMOE \cite{tang2025graphmoe}. The present model keeps the ordinary sparse MoE computation but introduces an explicit learned interaction between routing weights. We treat this as a model to test rather than as a novelty claim.
+
+\section{Model}
+
+Let $h \in \mathbb R^d$ denote the token representation entering an MoE layer. The ordinary router has one vector $q_i \in \mathbb R^d$ per expert. Writing the vectors as the rows of $Q$, the baseline scores and probabilities are
+
+\begin{equation}
+s = Q h,
+\qquad
+p^{(0)} = \operatorname{softmax}(s).
+\label{eq:baseline}
+\end{equation}
+
+The proposed modification gives the experts an interaction matrix $C$. The interaction is not introduced as an independent $N \times N$ parameter matrix. Instead, it is constructed from the same router vectors,
+
+\begin{equation}
+C_{ij} = q_i^\top M q_j,
+\qquad
+C = Q M Q^\top.
+\label{eq:interaction}
+\end{equation}
+
+The first implementation uses a low-rank symmetric metric
+
+\begin{equation}
+M = U \operatorname{diag}(m) U^\top,
+\label{eq:metric}
+\end{equation}
+
+where $U \in \mathbb R^{d \times r}$ and $m \in \mathbb R^r$ are learned by backpropagation. The entries of $m$ are unconstrained, so the interaction can acquire positive and negative directions. The extra parameter count is $d r + r$ per MoE layer rather than $d^2$.
+
+A single coupled routing correction is then applied,
+
+\begin{equation}
+p
+=
+\operatorname{softmax}
+\left[
+s + \lambda C p^{(0)}
+\right].
+\label{eq:coupled}
+\end{equation}
+
+The scalar $\lambda$ controls the strength of the interaction. At $\lambda = 0$, Eq.~\eqref{eq:coupled} reduces exactly to the ordinary router in Eq.~\eqref{eq:baseline}. For $\lambda \neq 0$, expert $j$ contributes to the score of expert $i$ in proportion to its baseline activation $p_j^{(0)}$ and the learned compatibility $C_{ij}$. The model therefore adds expert--expert structure without changing the surrounding attention or expert networks.
+
+The implementation uses the top-$k$ entries of $p$, renormalizes the selected weights, and combines the corresponding expert outputs,
+
+\begin{equation}
+y
+=
+\sum_{i \in \mathcal S_k(p)}
+\frac{p_i}{\sum_{j \in \mathcal S_k(p)} p_j}
+E_i(h).
+\end{equation}
+
+A standard load-balancing auxiliary loss is retained in both the baseline and coupled conditions. The metric parameters are present in both conditions, including $\lambda = 0$, so the model parameter count is identical.
+
+\section{Transformer experiment}
+
+The first test is intentionally small. A decoder-only causal Transformer uses multi-head self-attention followed by an MoE feed-forward block in every layer. The experts are two-layer GELU feed-forward networks. Routing uses four experts with top-2 selection by default.
+
+The language-modeling data are WikiText-2 raw text \cite{merity2017pointer}. Text is represented directly as UTF-8 bytes, giving a fixed vocabulary of 256 symbols and avoiding tokenizer-specific effects. Training minimizes next-byte cross entropy plus the same router load-balancing term in both conditions.
+
+The primary comparison is
+
+\begin{equation}
+\lambda = 0
+\quad \text{versus} \quad
+\lambda > 0,
+\end{equation}
+
+with the same architecture, initialization seed, optimizer, data, and number of updates. The repository script \texttt{experiment.sh} runs $\lambda = 0$ and $\lambda = 1$ with otherwise identical defaults.
+
+\section{Measurements}
+
+The main empirical quantity is validation negative log-likelihood. Perplexity is reported as a familiar transformation of the byte-level loss but should not be compared directly with word- or subword-tokenized language models.
+
+The router is also measured directly. The code records the mean routing entropy, the coefficient of variation of expert load, the Kullback--Leibler divergence
+
+\begin{equation}
+D_{\mathrm{KL}}\left(p \,\|\, p^{(0)}\right),
+\end{equation}
+
+and the norm of the learned interaction matrix. These quantities distinguish a useful loss reduction from a trivial collapse toward one expert or from a coupling term that remains effectively zero.
+
+The first run is only a mechanism test. A positive result should be repeated across seeds and coupling strengths before making a performance claim. Further ablations can then compare the structured form $C = Q M Q^\top$ with a directly learned $C$ and test whether the learned interaction has stable spectral or block structure.
+
+\bibliographystyle{unsrtnat}
+\bibliography{refs}
+
+\end{document}

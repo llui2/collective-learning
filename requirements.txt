@@ -1,3 +1,5 @@
 numpy>=2.0
 torch>=2.2
 datasets>=3.0
+matplotlib>=3.9
+tqdm>=4.66

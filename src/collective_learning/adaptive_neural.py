@@ -309,9 +309,17 @@ def probe_observables(
     ).sum(dim=1)
     entropy /= np.log(probabilities.shape[1])
 
+    routing_center = probabilities @ phi
+    mean_sample_competence = competence.mean(dim=0, keepdim=True)
+    sample_phenotype = float(
+        (competence - mean_sample_competence).square().mean().item()
+    )
+
     return {
         "G": differentiation(allocation),
+        "R": differentiation(routing_center),
         "S": differentiation(component_m),
+        "S_sample": sample_phenotype,
         "entropy": float(entropy.mean().item()),
         "allocation": allocation,
         "component_competence": component_m,
@@ -374,7 +382,9 @@ def run_sigma(
     history = {
         "step": [],
         "G": [],
+        "R": [],
         "S": [],
+        "S_sample": [],
         "entropy": [],
         "strategy_step": [],
     }
@@ -395,7 +405,9 @@ def run_sigma(
     )
     history["step"].append(0)
     history["G"].append(initial_obs["G"])
+    history["R"].append(initial_obs["R"])
     history["S"].append(initial_obs["S"])
+    history["S_sample"].append(initial_obs["S_sample"])
     history["entropy"].append(initial_obs["entropy"])
     history["strategy_step"].append(0.0)
 
@@ -476,7 +488,9 @@ def run_sigma(
             )
             history["step"].append(step + 1)
             history["G"].append(obs["G"])
+            history["R"].append(obs["R"])
             history["S"].append(obs["S"])
+            history["S_sample"].append(obs["S_sample"])
             history["entropy"].append(obs["entropy"])
             history["strategy_step"].append(
                 strategy_step
@@ -484,7 +498,8 @@ def run_sigma(
 
             progress.set_postfix(
                 G=f"{obs['G']:.3g}",
-                S=f"{obs['S']:.3g}",
+                R=f"{obs['R']:.3g}",
+                S=f"{obs['S_sample']:.3g}",
                 H=f"{obs['entropy']:.3f}",
                 loss=f"{np.mean(last_losses):.3g}",
                 refresh=False,
@@ -529,7 +544,9 @@ def run_sigma(
         "G": float(np.mean(tail_g)),
         "S": float(np.mean(tail_s)),
         "G_test": final_obs["G"],
+        "R_test": final_obs["R"],
         "S_test": final_obs["S"],
+        "S_sample_test": final_obs["S_sample"],
         "routing_entropy_test": final_obs["entropy"],
         "accuracy": accuracy,
         "loss": loss,

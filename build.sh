@@ -28,6 +28,14 @@ else
 fi
 
 shopt -s nullglob
+adaptive_neural_results=(results/adaptive_neural_seed*.json results/adaptive_neural_quick_seed*.json)
+if (( ${#adaptive_neural_results[@]} > 0 )); then
+  "$python_bin" draft/figures/fig4.py
+else
+  rm -f draft/figures/fig4.pdf
+  echo "no adaptive neural result files; skip fig4"
+fi
+
 mnist_results=(results/mnist_seed*.json results/mnist_quick_seed*.json)
 if (( ${#mnist_results[@]} > 0 )); then
   "$python_bin" draft/figures/fig2.py

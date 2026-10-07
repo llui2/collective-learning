@@ -24,7 +24,7 @@ sigma_critical = data["sigma_critical"]
 
 x = np.log10(sigmas)
 
-fig, ax = plt.subplots(1, 2, figsize=(7.3, 2.75))
+fig, ax = plt.subplots(2, 1, figsize=(3.8, 4.8), sharex=True)
 
 for k, nu in enumerate(nus):
     color = DEPTH_COLORS[k]
@@ -71,20 +71,19 @@ for k, nu in enumerate(nus):
             ax[0].axvline(xc, color=color, linestyle=":", linewidth=0.9, alpha=0.75)
             ax[1].axvline(xc, color=color, linestyle=":", linewidth=0.9, alpha=0.75)
 
-ax[0].set_xlabel(r"$\log_{10}\sigma$")
 ax[0].set_ylabel(r"$G$")
 
 ax[1].set_xlabel(r"$\log_{10}\sigma$")
 ax[1].set_ylabel(r"$S$")
 
 handles, labels = ax[0].get_legend_handles_labels()
-fig.legend(
+ax[0].legend(
     handles,
     labels,
-    loc="upper center",
+    loc="lower center",
+    bbox_to_anchor=(0.5, 1.02),
     ncol=len(labels),
     frameon=False,
-    bbox_to_anchor=(0.5, 1.01),
     columnspacing=0.9,
     handletextpad=0.3,
 )
@@ -99,6 +98,6 @@ for axis in ax:
 panel_label(ax[0], "(a)")
 panel_label(ax[1], "(b)")
 
-fig.subplots_adjust(left=0.11, right=0.99, bottom=0.22, top=0.84, wspace=0.28)
+fig.subplots_adjust(left=0.18, right=0.98, bottom=0.11, top=0.91, hspace=0.25)
 fig.savefig(OUT, bbox_inches="tight")
 plt.close(fig)

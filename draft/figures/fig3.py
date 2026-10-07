@@ -36,13 +36,13 @@ for k, nu in enumerate(nus):
         color=color,
         marker=marker,
         linestyle="",
-        markersize=MARKERSIZE,
+        markersize=0.82 * MARKERSIZE,
         label=fr"$\nu={nu:g}$",
     )
     ax[0].fill_between(
         x,
         np.maximum(0.0, g_mean[k] - g_std[k]),
-        np.minimum(1.0, g_mean[k] + g_std[k]),
+        g_mean[k] + g_std[k],
         color=color,
         alpha=0.22,
         linewidth=0,
@@ -54,12 +54,12 @@ for k, nu in enumerate(nus):
         color=color,
         marker=marker,
         linestyle="",
-        markersize=MARKERSIZE,
+        markersize=0.82 * MARKERSIZE,
     )
     ax[1].fill_between(
         x,
         np.maximum(0.0, s_mean[k] - s_std[k]),
-        np.minimum(1.0, s_mean[k] + s_std[k]),
+        s_mean[k] + s_std[k],
         color=color,
         alpha=0.22,
         linewidth=0,
@@ -68,8 +68,8 @@ for k, nu in enumerate(nus):
     if sigma_critical[k] > sigmas.min():
         xc = np.log10(sigma_critical[k])
         if xc <= x.max():
-            ax[0].axvline(xc, color=color, linestyle=":", linewidth=1.0)
-            ax[1].axvline(xc, color=color, linestyle=":", linewidth=1.0)
+            ax[0].axvline(xc, color=color, linestyle=":", linewidth=0.9, alpha=0.75)
+            ax[1].axvline(xc, color=color, linestyle=":", linewidth=0.9, alpha=0.75)
 
 ax[0].set_xlabel(r"$\log_{10}\sigma$")
 ax[0].set_ylabel(r"$G$")

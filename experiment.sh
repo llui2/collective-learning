@@ -6,6 +6,7 @@ cd "$repo_root"
 
 git pull --ff-only
 mkdir -p results
+export PYTHONPATH="$repo_root/src${PYTHONPATH:+:$PYTHONPATH}"
 
 python_bin="${PYTHON:-$repo_root/.venv/bin/python}"
 if [[ ! -x "$python_bin" ]]; then

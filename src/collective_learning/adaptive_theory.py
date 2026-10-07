@@ -1,4 +1,4 @@
-"""Effective adaptive-learning dynamics and symmetry breaking."""
+"""Adaptive extension of the collective-learning effective theory."""
 
 import argparse
 import os
@@ -10,30 +10,36 @@ from scipy.integrate import solve_ivp
 from tqdm.auto import tqdm
 
 
-VERSION = 5
+VERSION = 6
 
 
 def theory_parameters(args, nus):
-    m_star = args.learning_rate / (
-        args.learning_rate + args.relaxation * args.components
-    )
-    base = args.learning_rate / args.components + args.relaxation
-    gain = (
-        args.learning_rate
-        * (1.0 - m_star) ** 2
-        / (args.components * (args.units - 1))
-    )
+    if args.drive <= args.relaxation:
+        raise ValueError("drive must exceed relaxation for the positive D=1 symmetric state")
+
+    m_star = np.sqrt(args.drive - args.relaxation)
+
+    # D=1 Arola local dynamics:
+    # f(m,a) = -m^3 + drive * K * a * m - relaxation * m.
+    # At a=1/K, -df/dm = 2 m_*^2.
+    restoring = 2.0 * m_star**2
 
     # Complete interaction graph: lambda_2 = N.
-    sigma_critical = gain / nus - base
-    return m_star, sigma_critical
+    gain = (
+        args.drive
+        * m_star
+        * (1.0 - m_star)
+        / (args.units - 1)
+    )
+    sigma_critical = gain / nus - restoring
+    return m_star, restoring, sigma_critical
 
 
 def sigma_grid(args):
     return np.logspace(-2.0, 1.0, args.sigma_points)
 
 
-def rhs(_, state, runs, units, components, learning_rate, relaxation, epsilon, nu, sigma):
+def rhs(_, state, runs, units, components, drive, relaxation, epsilon, nu, sigma):
     size = runs * units * components
     m = state[:size].reshape(runs, units, components)
     a = state[size:].reshape(runs, units, components)
@@ -47,7 +53,8 @@ def rhs(_, state, runs, units, components, learning_rate, relaxation, epsilon, n
     )
 
     dm = (
-        learning_rate * a * (1.0 - m)
+        -m**3
+        + drive * components * a * m
         - relaxation * m
         + sigma * (m_bar[:, None, :] - m)
     )
@@ -84,13 +91,7 @@ def observables(solution, runs, units, components):
 
 
 def run_point(task):
-    (
-        nu_idx,
-        sigma_idx,
-        nu,
-        sigma,
-        config,
-    ) = task
+    nu_idx, sigma_idx, nu, sigma, config = task
 
     runs = config["runs"]
     units = config["units"]
@@ -106,9 +107,7 @@ def run_point(task):
     a = np.clip(a, 1e-12, None)
     a /= a.sum(axis=-1, keepdims=True)
 
-    m_star = config["m_star"]
-    m = m_star + config["noise"] * rng.normal(size=a.shape)
-
+    m = config["m_star"] + config["noise"] * rng.normal(size=a.shape)
     state = np.concatenate((m.ravel(), a.ravel()))
 
     t_start = 0.0
@@ -128,7 +127,7 @@ def run_point(task):
                 runs,
                 units,
                 components,
-                config["learning_rate"],
+                config["drive"],
                 config["relaxation"],
                 config["epsilon"],
                 nu,
@@ -151,7 +150,7 @@ def run_point(task):
             runs,
             units,
             components,
-            config["learning_rate"],
+            config["drive"],
             config["relaxation"],
             config["epsilon"],
             nu,
@@ -172,7 +171,6 @@ def run_point(task):
         components,
     )
 
-    # The continuous dynamics preserves the allocation simplex.
     size = runs * units * components
     final_a = state[size:].reshape(runs, units, components)
     simplex_error = float(
@@ -192,14 +190,14 @@ def run_point(task):
 
 def simulate(args):
     nus = np.asarray(args.mutation_rates, dtype=float)
-    m_star, sigma_critical = theory_parameters(args, nus)
+    m_star, restoring, sigma_critical = theory_parameters(args, nus)
     sigmas = sigma_grid(args)
 
     config = {
         "runs": args.runs,
         "units": args.units,
         "components": args.components,
-        "learning_rate": args.learning_rate,
+        "drive": args.drive,
         "relaxation": args.relaxation,
         "epsilon": args.epsilon,
         "noise": args.noise,
@@ -274,9 +272,10 @@ def simulate(args):
         "simplex_error": simplex_error,
         "final_time": final_time,
         "m_star": np.asarray(m_star),
+        "restoring": np.asarray(restoring),
         "units": np.asarray(args.units),
         "components": np.asarray(args.components),
-        "learning_rate": np.asarray(args.learning_rate),
+        "drive": np.asarray(args.drive),
         "relaxation": np.asarray(args.relaxation),
         "epsilon": np.asarray(args.epsilon),
         "runs": np.asarray(args.runs),
@@ -312,9 +311,9 @@ def parse_args():
         "--mutation-rates",
         type=float,
         nargs="+",
-        default=(0.002, 0.004, 0.008),
+        default=(0.002, 0.006, 0.02),
     )
-    p.add_argument("--learning-rate", type=float, default=1.2)
+    p.add_argument("--drive", type=float, default=0.35)
     p.add_argument("--relaxation", type=float, default=0.25)
     p.add_argument("--epsilon", type=float, default=0.2)
     p.add_argument("--time", type=float, default=12000.0)

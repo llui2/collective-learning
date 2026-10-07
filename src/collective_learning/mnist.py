@@ -225,13 +225,14 @@ def run(args):
                     "cross_accuracy": ax.tolist(),
                 }
                 results.append(row)
-                out.write_text(json.dumps({"config": vars(args), "results": results}, indent=2))
+                out.write_text(json.dumps({"config": vars(args), "complete": False, "results": results}, indent=2))
                 progress.write(
                     f"run={run_idx} D={depth} sigma={sigma:g} "
                     f"loss={row['loss']:.4f} acc={row['accuracy']:.3f}"
                 )
 
     progress.close()
+    out.write_text(json.dumps({"config": vars(args), "complete": True, "results": results}, indent=2))
     print(f"wrote {out}")
 
 

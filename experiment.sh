@@ -24,12 +24,15 @@ publish() {
 
 theory_out="results/theory_baseline.npz"
 if [[ ! -s "$theory_out" || "${FORCE:-0}" == "1" ]]; then
-  "$python_bin" reproduce_theory.py --output "$theory_out"
+  echo "== effective-theory baseline =="
+  echo "workers: ${THEORY_JOBS:-8}"
+  "$python_bin" reproduce_theory.py     --jobs "${THEORY_JOBS:-8}"     --output "$theory_out"
   publish "theory baseline" "$theory_out"
 else
   echo "skip $theory_out"
 fi
 
+echo "== MNIST baseline =="
 for seed in {0..9}; do
   out="results/mnist_seed${seed}.json"
   if [[ -s "$out" && "${FORCE:-0}" != "1" ]]; then
@@ -37,6 +40,7 @@ for seed in {0..9}; do
     continue
   fi
 
+  echo "-- seed $seed --"
   "$python_bin" reproduce_mnist.py     --runs 1     --seed "$seed"     --device cuda     --output "$out"
 
   publish "MNIST baseline seed $seed" "$out"

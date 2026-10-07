@@ -274,6 +274,8 @@ def run_sigma(
     a /= a.sum(dim=1, keepdim=True)
 
     batch_gen = torch.Generator(device=device).manual_seed(run_seed + 200003)
+    adjacency = torch.ones((args.units, args.units), device=device)
+    adjacency -= torch.eye(args.units, device=device)
 
     probe_cluster = torch.cat(
         [
@@ -323,6 +325,7 @@ def run_sigma(
             learning_rate=args.learning_rate,
             coupling=sigma,
             weight_decay=args.weight_decay,
+            adjacency=adjacency,
             sample_weights=[weights[i] for i in range(args.units)],
         )
         last_losses.append(float(losses.mean().item()))

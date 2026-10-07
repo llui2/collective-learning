@@ -12,16 +12,23 @@ from style import DEPTH_COLORS, LINESTYLE, MARKER, MARKERSIZE, apply_style, pane
 apply_style()
 
 ROOT = Path(__file__).resolve().parents[2]
-FULL = sorted((ROOT / "results").glob("mnist_seed*.json"))
-QUICK = sorted((ROOT / "results").glob("mnist_quick_seed*.json"))
-FILES = FULL if FULL else QUICK
+def completed(paths):
+    keep = []
+    for path in paths:
+        data = json.loads(path.read_text())
+        if data.get("complete") is True:
+            keep.append((path, data))
+    return keep
+
+
+full = completed(sorted((ROOT / "results").glob("mnist_seed*.json")))
+quick = completed(sorted((ROOT / "results").glob("mnist_quick_seed*.json")))
+files = full if full else quick
 OUT = Path(__file__).with_suffix(".pdf")
 
 rows = []
-for path in FILES:
-    data = json.loads(path.read_text())
-    if data.get("complete") is True:
-        rows.extend(data["results"])
+for _, data in files:
+    rows.extend(data["results"])
 
 depths = sorted({row["depth"] for row in rows})
 sigmas = sorted({row["sigma_released_plot"] for row in rows})

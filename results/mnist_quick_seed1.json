@@ -1,0 +1,353 @@
+{
+  "config": {
+    "runs": 1,
+    "transient_steps": 1000,
+    "measure_steps": 1000,
+    "eval_every": 200,
+    "batch_size": 32,
+    "test_samples": 50,
+    "learning_rate": 0.005,
+    "weight_decay": 0.001,
+    "width": 20,
+    "protocol": "nonadiabatic",
+    "init": "source",
+    "device": "cuda",
+    "seed": 1,
+    "output": "results/mnist_quick_seed1.json",
+    "quick": true,
+    "smoke": false
+  },
+  "complete": true,
+  "results": [
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 0.0001,
+      "sigma_released_plot": 1e-05,
+      "magnetization": 2.3256192725966685e-05,
+      "loss": 6.7485170043945315,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 0.004641588833612782,
+      "sigma_released_plot": 0.0004641588833612782,
+      "magnetization": 4.76674833407742e-06,
+      "loss": 6.624814007568359,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 0.21544346900318845,
+      "sigma_released_plot": 0.021544346900318846,
+      "magnetization": -5.432385587482713e-06,
+      "loss": 4.539887945556641,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 3.8311868495572927,
+      "sigma_released_plot": 0.38311868495572926,
+      "magnetization": 8.032418467337265e-05,
+      "loss": 1.4479194763183596,
+      "accuracy": 0.4328,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 10.0,
+      "sigma_released_plot": 1.0,
+      "magnetization": -8.580762718338518e-05,
+      "loss": 0.885166160583496,
+      "accuracy": 0.806,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 25.2,
+      "sigma_released_plot": 2.52,
+      "magnetization": 0.00010023371592978947,
+      "loss": 0.658931901550293,
+      "accuracy": 0.9139999999999999,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 55.599999999999994,
+      "sigma_released_plot": 5.56,
+      "magnetization": 6.788954269723035e-05,
+      "loss": 0.5733858551025391,
+      "accuracy": 0.954,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 101.19999999999999,
+      "sigma_released_plot": 10.12,
+      "magnetization": 1.7168750673590694e-05,
+      "loss": 0.5449612480163573,
+      "accuracy": 0.9559999999999998,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 162.0,
+      "sigma_released_plot": 16.2,
+      "magnetization": -3.1060949913808146e-05,
+      "loss": 0.5325541641235352,
+      "accuracy": 0.9568,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 253.2,
+      "sigma_released_plot": 25.32,
+      "magnetization": -3.086619792156853e-05,
+      "loss": 0.5267222961425782,
+      "accuracy": 0.9596,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 0,
+      "sigma_equation": 390.0,
+      "sigma_released_plot": 39.0,
+      "magnetization": -0.00017133344401372598,
+      "loss": 0.541489193725586,
+      "accuracy": 0.9096,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 0.0001,
+      "sigma_released_plot": 1e-05,
+      "magnetization": 0.002426319557707757,
+      "loss": 7.582991247558594,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 0.004641588833612782,
+      "sigma_released_plot": 0.0004641588833612782,
+      "magnetization": 0.002636782159097493,
+      "loss": 7.506064172363281,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 0.21544346900318845,
+      "sigma_released_plot": 0.021544346900318846,
+      "magnetization": 0.0037117495154961946,
+      "loss": 5.34672349243164,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 3.8311868495572927,
+      "sigma_released_plot": 0.38311868495572926,
+      "magnetization": 0.009975560456514359,
+      "loss": 4.4976953125,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 10.0,
+      "sigma_released_plot": 1.0,
+      "magnetization": 0.012308037430047988,
+      "loss": 3.432098797607422,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 25.2,
+      "sigma_released_plot": 2.52,
+      "magnetization": 0.011662228479981423,
+      "loss": 2.0302632202148434,
+      "accuracy": 0.22440000000000002,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 55.599999999999994,
+      "sigma_released_plot": 5.56,
+      "magnetization": 0.007272789413109422,
+      "loss": 1.110862284851074,
+      "accuracy": 0.7192000000000001,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 101.19999999999999,
+      "sigma_released_plot": 10.12,
+      "magnetization": 0.004867043197154999,
+      "loss": 1.1095235443115234,
+      "accuracy": 0.7756000000000001,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 162.0,
+      "sigma_released_plot": 16.2,
+      "magnetization": 0.003843906857073307,
+      "loss": 1.1205945709228515,
+      "accuracy": 0.7752,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 253.2,
+      "sigma_released_plot": 25.32,
+      "magnetization": 0.003452877285890281,
+      "loss": 1.2127685760498048,
+      "accuracy": 0.7876,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 1,
+      "sigma_equation": 390.0,
+      "sigma_released_plot": 39.0,
+      "magnetization": 0.001202268761699088,
+      "loss": 1.6996563705444339,
+      "accuracy": 0.5452,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 0.0001,
+      "sigma_released_plot": 1e-05,
+      "magnetization": 0.0024445054959505797,
+      "loss": 7.985156225585937,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 0.004641588833612782,
+      "sigma_released_plot": 0.0004641588833612782,
+      "magnetization": 0.0023765965318307282,
+      "loss": 7.839060681152344,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 0.21544346900318845,
+      "sigma_released_plot": 0.021544346900318846,
+      "magnetization": 0.004301214087754489,
+      "loss": 5.529016363525391,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 3.8311868495572927,
+      "sigma_released_plot": 0.38311868495572926,
+      "magnetization": 0.007363797258585691,
+      "loss": 5.625546948242188,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 10.0,
+      "sigma_released_plot": 1.0,
+      "magnetization": 0.0019738124869763856,
+      "loss": 2.459964434814453,
+      "accuracy": 0.1,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 25.2,
+      "sigma_released_plot": 2.52,
+      "magnetization": 0.0005268512031761929,
+      "loss": 2.2988013214111325,
+      "accuracy": 0.11680000000000001,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 55.599999999999994,
+      "sigma_released_plot": 5.56,
+      "magnetization": 0.0002593308774521574,
+      "loss": 2.297635159301758,
+      "accuracy": 0.21760000000000002,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 101.19999999999999,
+      "sigma_released_plot": 10.12,
+      "magnetization": 0.0001482812598987948,
+      "loss": 2.2991085174560544,
+      "accuracy": 0.16919999999999996,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 162.0,
+      "sigma_released_plot": 16.2,
+      "magnetization": 0.0001284020445018541,
+      "loss": 2.2981242095947265,
+      "accuracy": 0.08159999999999998,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 253.2,
+      "sigma_released_plot": 25.32,
+      "magnetization": 0.0003232405535527505,
+      "loss": 2.2987525817871095,
+      "accuracy": 0.08520000000000001,
+      "cross_accuracy": null
+    },
+    {
+      "run": 0,
+      "depth": 2,
+      "sigma_equation": 390.0,
+      "sigma_released_plot": 39.0,
+      "magnetization": 0.00014590823062462732,
+      "loss": 2.2979979553222654,
+      "accuracy": 0.12000000000000002,
+      "cross_accuracy": null
+    }
+  ]
+}

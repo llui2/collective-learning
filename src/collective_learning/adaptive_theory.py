@@ -1,4 +1,4 @@
-"""Numerical effective theory for adaptive collective learning."""
+"""Effective adaptive-learning dynamics and symmetry breaking."""
 
 import argparse
 from pathlib import Path
@@ -6,12 +6,11 @@ from pathlib import Path
 import numpy as np
 
 
-def sigma_grid(points):
-    return np.logspace(-2.0, 1.0, points)
+VERSION = 2
 
 
 def simulate(args):
-    sigmas = sigma_grid(args.sigma_points)
+    sigmas = np.logspace(-2.0, 1.0, args.sigma_points)
     nus = np.asarray(args.mutation_rates, dtype=float)
 
     rng = np.random.default_rng(args.seed)
@@ -32,7 +31,7 @@ def simulate(args):
 
     steps = int(args.time / args.dt)
     tail_start = int(args.tail_fraction * steps)
-    sample_stride = max(1, int(args.sample_interval / args.dt))
+    stride = max(1, int(args.sample_interval / args.dt))
 
     genotype_sum = np.zeros((len(nus), len(sigmas), args.runs))
     phenotype_sum = np.zeros_like(genotype_sum)
@@ -63,46 +62,56 @@ def simulate(args):
 
         m += args.dt * dm
         a += args.dt * da
-
-        # Explicit Euler preserves the simplex to numerical accuracy; these
-        # two lines only remove accumulated roundoff near the boundary.
         a = np.clip(a, 1e-12, None)
         a /= a.sum(axis=-1, keepdims=True)
 
-        if step >= tail_start and (step - tail_start) % sample_stride == 0:
-            a_bar = a.mean(axis=3, keepdims=True)
-            m_population = m.mean(axis=3, keepdims=True)
-
-            genotype_sum += np.mean(
-                np.sum((a - a_bar) ** 2, axis=-1),
+        if step >= tail_start and (step - tail_start) % stride == 0:
+            a_bar = a.mean(axis=3)
+            g_num = np.mean(
+                np.sum((a - a_bar[..., None, :]) ** 2, axis=-1),
                 axis=3,
             )
-            phenotype_sum += np.mean(
-                np.sum((m - m_population) ** 2, axis=-1),
+            g_den = 1.0 - np.sum(a_bar**2, axis=-1)
+            genotype_sum += np.divide(
+                g_num,
+                g_den,
+                out=np.zeros_like(g_num),
+                where=g_den > 1e-12,
+            )
+
+            p = m / m.sum(axis=-1, keepdims=True)
+            p_bar = p.mean(axis=3)
+            s_num = np.mean(
+                np.sum((p - p_bar[..., None, :]) ** 2, axis=-1),
                 axis=3,
+            )
+            s_den = 1.0 - np.sum(p_bar**2, axis=-1)
+            phenotype_sum += np.divide(
+                s_num,
+                s_den,
+                out=np.zeros_like(s_num),
+                where=s_den > 1e-12,
             )
             samples += 1
 
     genotype = genotype_sum / samples
     phenotype = phenotype_sum / samples
 
-    # For the complete interaction graph used above, lambda_2 = N.
+    # Complete interaction graph: lambda_2 = N.
     lambda2 = float(args.units)
-    alpha0 = (
-        args.learning_rate / args.components
-        + args.relaxation
-    )
-    prefactor = (
+    base = args.learning_rate / args.components + args.relaxation
+    gain = (
         args.learning_rate
         * (1.0 - m_star) ** 2
         / (args.components * (args.units - 1))
     )
     sigma_critical = (
         args.units / lambda2
-        * (prefactor / nus - alpha0)
+        * (gain / nus - base)
     )
 
     return {
+        "version": np.asarray(VERSION),
         "sigmas": sigmas,
         "mutation_rates": nus,
         "genotype_mean": genotype.mean(axis=2),
@@ -123,10 +132,9 @@ def simulate(args):
 
 
 def run(args):
-    result = simulate(args)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(out, **result)
+    np.savez_compressed(out, **simulate(args))
     print(f"wrote {out}")
 
 
@@ -134,14 +142,19 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--units", type=int, default=10)
     p.add_argument("--components", type=int, default=3)
-    p.add_argument("--runs", type=int, default=16)
-    p.add_argument("--sigma-points", type=int, default=22)
-    p.add_argument("--mutation-rates", type=float, nargs="+", default=(0.002, 0.004, 0.008))
+    p.add_argument("--runs", type=int, default=12)
+    p.add_argument("--sigma-points", type=int, default=24)
+    p.add_argument(
+        "--mutation-rates",
+        type=float,
+        nargs="+",
+        default=(0.002, 0.004, 0.008),
+    )
     p.add_argument("--learning-rate", type=float, default=1.2)
     p.add_argument("--relaxation", type=float, default=0.25)
     p.add_argument("--epsilon", type=float, default=0.2)
     p.add_argument("--dt", type=float, default=0.1)
-    p.add_argument("--time", type=float, default=1400.0)
+    p.add_argument("--time", type=float, default=5000.0)
     p.add_argument("--tail-fraction", type=float, default=0.8)
     p.add_argument("--sample-interval", type=float, default=1.0)
     p.add_argument("--noise", type=float, default=0.01)

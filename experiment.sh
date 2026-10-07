@@ -52,7 +52,8 @@ publish() {
   git add "$@"
   if ! git diff --cached --quiet; then
     git commit -m "$message"
-    git push
+    git pull --rebase origin main
+    git push origin main
   fi
 }
 

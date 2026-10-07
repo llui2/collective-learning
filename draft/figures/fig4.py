@@ -35,7 +35,10 @@ full = completed(
 quick = completed(
     sorted((ROOT / "results").glob("adaptive_neural_quick_seed*.json"))
 )
-files = full if full else quick
+pilot = completed(
+    sorted((ROOT / "results").glob("adaptive_neural_pilot_seed*.json"))
+)
+files = full if full else (quick if quick else pilot)
 
 if not files:
     OUT.unlink(missing_ok=True)

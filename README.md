@@ -67,3 +67,6 @@ and already accepts optional per-sample weights. With no sample weights it repro
 `src/collective_learning/theory.py` computes the released effective Ginzburg--Landau baseline. `src/collective_learning/mnist.py` computes the MNIST neural-network baseline. The root shell scripts set `PYTHONPATH=src` and run these modules directly.
 
 The mathematical formulation of the new model is in `draft/main.tex`. The adaptive effective theory is computed by `src/collective_learning/adaptive_theory.py`; it closes the coarse-grained dynamics, derives the symmetry-breaking threshold, and supplies the data for Fig. 3.
+
+
+The adaptive effective-theory sweep uses SciPy DOP853 with strict tolerances and parallelizes independent $(\nu,\sigma)$ points across CPU cores. On Minerva, `./experiment.sh` uses 28 workers by default; override this with `ADAPTIVE_JOBS=<n>`.

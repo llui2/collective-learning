@@ -135,6 +135,15 @@ def run(args):
 
     sigmas = released_sigma_grid()
     depths = [0, 1, 2]
+
+    if args.quick:
+        quick_indices = [0, 8, 16, 22, 24, 25, 27, 30, 34, 40, 49]
+        sigmas = sigmas[quick_indices]
+        args.transient_steps = 1000
+        args.measure_steps = 1000
+        args.eval_every = 200
+        args.runs = 1
+
     if args.smoke:
         sigmas = np.array([1e-4, 1.0, 30.0])
         depths = [0, 1]
@@ -213,7 +222,7 @@ def run(args):
                     progress=progress,
                 )
 
-                ax = cross_accuracy(ensemble, x_test, y_test)
+                ax = None if args.quick or args.smoke else cross_accuracy(ensemble, x_test, y_test)
                 row = {
                     "run": run_idx,
                     "depth": depth,
@@ -222,7 +231,7 @@ def run(args):
                     "magnetization": measured["magnetization"],
                     "loss": measured["loss"],
                     "accuracy": measured["accuracy"],
-                    "cross_accuracy": ax.tolist(),
+                    "cross_accuracy": None if ax is None else ax.tolist(),
                 }
                 results.append(row)
                 out.write_text(json.dumps({"config": vars(args), "complete": False, "results": results}, indent=2))
@@ -252,6 +261,7 @@ def parse_args():
     p.add_argument("--device", default="auto")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--output", default="results/mnist_baseline.json")
+    p.add_argument("--quick", action="store_true")
     p.add_argument("--smoke", action="store_true")
     return p.parse_args()
 

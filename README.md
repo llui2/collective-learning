@@ -16,7 +16,7 @@ pip install -r requirements-compute.txt
 ./experiment.sh
 ```
 
-`experiment.sh` is resumable. During development it defaults to a quick MNIST sweep: one seed, all three depths, 11 representative couplings, and 1000 transient + 1000 measured updates per point. Run `MODE=full ./experiment.sh` for the paper-level 10-seed, 50-coupling, 20000 + 20000 update protocol. Each completed result is committed and pushed immediately; use `FORCE=1` to recompute an existing result.
+`experiment.sh` is resumable. During development it defaults to a quick MNIST sweep: three seeds, all three depths, 11 representative couplings, and 1000 transient + 1000 measured updates per point. Run `MODE=full ./experiment.sh` for the paper-level 10-seed, 50-coupling, 20000 + 20000 update protocol. Each completed result is committed and pushed immediately; use `FORCE=1` to recompute an existing result.
 
 Tracked outputs are:
 

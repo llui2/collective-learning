@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from torchvision import datasets
+from tqdm.auto import tqdm
 
 from .core import NeuralUnit, coupled_sgd_step, cross_accuracy, evaluate, mean_parameter
 
@@ -76,10 +77,14 @@ def train_steps(
     measure=False,
     x_eval=None,
     y_eval=None,
+    progress=None,
 ):
     magnetization = []
     losses = []
     accuracy = []
+
+    progress_chunk = 100
+    pending_progress = 0
 
     for step in range(steps):
         batches = sample_private_batches(
@@ -98,6 +103,14 @@ def train_steps(
             metrics = [evaluate(model, x_eval, y_eval) for model in ensemble]
             accuracy.append(np.mean([m[0] for m in metrics]))
             losses.append(np.mean([m[1] for m in metrics]))
+
+        pending_progress += 1
+        if progress is not None and pending_progress == progress_chunk:
+            progress.update(pending_progress)
+            pending_progress = 0
+
+    if progress is not None and pending_progress:
+        progress.update(pending_progress)
 
     if not measure:
         return None
@@ -139,6 +152,19 @@ def run(args):
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    total_updates = (
+        args.runs
+        * len(depths)
+        * len(sigmas)
+        * (args.transient_steps + args.measure_steps)
+    )
+    progress = tqdm(
+        total=total_updates,
+        unit="step",
+        dynamic_ncols=True,
+        desc=f"seed {args.seed}",
+    )
+
     for run_idx in range(args.runs):
         for depth in depths:
             ensemble = None
@@ -147,6 +173,13 @@ def run(args):
                 if ensemble is None or args.protocol == "nonadiabatic":
                     ensemble = make_ensemble(depth, args.width, device, args.init)
 
+                progress.set_postfix(
+                    run=run_idx,
+                    D=depth,
+                    sigma=f"{sigma:.3g}",
+                    phase="transient",
+                    refresh=False,
+                )
                 train_steps(
                     ensemble,
                     args.transient_steps,
@@ -156,6 +189,14 @@ def run(args):
                     class_indices,
                     args,
                     gen,
+                    progress=progress,
+                )
+                progress.set_postfix(
+                    run=run_idx,
+                    D=depth,
+                    sigma=f"{sigma:.3g}",
+                    phase="measure",
+                    refresh=False,
                 )
                 measured = train_steps(
                     ensemble,
@@ -169,6 +210,7 @@ def run(args):
                     measure=True,
                     x_eval=x_eval,
                     y_eval=y_eval,
+                    progress=progress,
                 )
 
                 ax = cross_accuracy(ensemble, x_test, y_test)
@@ -184,11 +226,12 @@ def run(args):
                 }
                 results.append(row)
                 out.write_text(json.dumps({"config": vars(args), "results": results}, indent=2))
-                print(
+                progress.write(
                     f"run={run_idx} D={depth} sigma={sigma:g} "
                     f"loss={row['loss']:.4f} acc={row['accuracy']:.3f}"
                 )
 
+    progress.close()
     print(f"wrote {out}")
 
 

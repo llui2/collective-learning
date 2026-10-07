@@ -80,13 +80,16 @@ try:
 except (OSError, KeyError, ValueError):
     raise SystemExit(1)
 
-raise SystemExit(0 if version == 3 else 1)
+raise SystemExit(0 if version == 4 else 1)
 PY
 }
 
 if [[ "${FORCE:-0}" == "1" ]] || ! adaptive_current; then
   echo "== adaptive effective theory =="
-  "$python_bin" -m collective_learning.adaptive_theory --output "$adaptive_out"
+  echo "workers: ${ADAPTIVE_JOBS:-28}"
+  "$python_bin" -m collective_learning.adaptive_theory \
+    --jobs "${ADAPTIVE_JOBS:-28}" \
+    --output "$adaptive_out"
   publish "adaptive effective theory" "$adaptive_out"
 else
   echo "skip $adaptive_out"

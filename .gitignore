@@ -3,11 +3,10 @@ __pycache__/
 .venv/
 .envrc
 .DS_Store
-runs/
-results/*.pt
-results/*.pth
-results/*.ckpt
-draft/figures/
+
+# generated data and figures
+results/
+figures/
 
 # LaTeX
 *.aux
@@ -18,4 +17,4 @@ draft/figures/
 *.log
 *.out
 *.synctex.gz
-draft/main.pdf
+*.pdf

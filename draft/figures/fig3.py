@@ -80,9 +80,8 @@ ax[1].set_ylabel(r"$S$")
 
 for axis in ax:
     axis.set_xlim(x.min(), x.max())
-    axis.set_ylim(-0.03, 1.03)
+    axis.set_ylim(bottom=0)
     axis.set_xticks([-2, -1, 0, 1])
-    axis.set_yticks([0, 0.5, 1])
     axis.grid(False)
     axis.tick_params(top=False, right=False)
 

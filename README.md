@@ -16,7 +16,7 @@ pip install -r requirements-compute.txt
 ./experiment.sh
 ```
 
-`experiment.sh` is resumable. It now runs the adaptive neural experiment before the original MNIST reproduction. The adaptive quick sweep uses three seeds, nine couplings and 6000 neural updates per coupling. Set `ADAPTIVE_NEURAL_MODE=full` for the denser five-seed sweep. The original reproduction remains controlled by `MODE=quick|full`. Each completed result is committed and pushed immediately; use `FORCE=1` to recompute existing results.
+`experiment.sh` is resumable. It now runs the adaptive neural experiment before the original MNIST reproduction. The adaptive quick sweep uses three seeds, ten couplings and 8000 neural updates per coupling. Set `ADAPTIVE_NEURAL_MODE=full` for the denser five-seed sweep. The original reproduction remains controlled by `MODE=quick|full`. Each completed result is committed and pushed immediately; use `FORCE=1` to recompute existing results.
 
 Tracked outputs are:
 
@@ -74,10 +74,13 @@ The mathematical formulation of the new model is in `draft/main.tex`. The adapti
 
 The adaptive effective-theory sweep uses SciPy DOP853 with strict tolerances and parallelizes independent $(\nu,\sigma)$ points across CPU cores. On Minerva, `./experiment.sh` uses 28 workers by default; override this with `ADAPTIVE_JOBS=<n>`.
 
-
 ## Adaptive neural experiment
 
-`src/collective_learning/adaptive_neural.py` tests the full coupled neural dynamics. Every learner starts from the same network parameters and receives the same minibatch. A fixed common representation is obtained without labels by PCA followed by k-means; minibatches are balanced across the resulting components. The adaptive allocation changes only the relative sample weights, so every learner has exactly the same total gradient budget. Component competence is measured as `exp(-cross_entropy)` on a held-out training probe, which drives the slow marginal-contribution rule. The reported phenotype differentiation is evaluated on the MNIST test set.
+`src/collective_learning/adaptive_neural.py` now implements the microscopic model directly. Every learner starts from the same network parameters, receives the same minibatch, and has the same total gradient budget. A fixed shared representation `phi(x)` is obtained without labels by PCA. The adaptive strategy scores each individual sample through `g_i . phi(x) / T`, and the resulting softmax weights enter the real coupled-SGD update.
+
+The slow strategy update is computed from sample-level marginal collective contribution using the natural gradient of the softmax family. No k-means component or coarse allocation enters the learning or strategy dynamics. An unsupervised k-means partition of the shared representation is retained only as an observation map for measuring coarse allocation differentiation `G` and phenotype differentiation `S` after the microscopic dynamics has been defined.
+
+Version 2 result files store the full time history of `G(t)`, `S(t)`, routing entropy and strategy-step size. `draft/figures/fig4.py` plots the growth or decay of allocation differentiation for representative couplings and the stationary coupling sweep.
 
 A short GPU check can be run with
 

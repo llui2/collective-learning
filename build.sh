@@ -20,6 +20,13 @@ else
   echo "missing results/theory_baseline.npz; skip fig1"
 fi
 
+if [[ -s results/adaptive_theory.npz ]]; then
+  "$python_bin" draft/figures/fig3.py
+else
+  rm -f draft/figures/fig3.pdf
+  echo "missing results/adaptive_theory.npz; skip fig3"
+fi
+
 shopt -s nullglob
 mnist_results=(results/mnist_seed*.json results/mnist_quick_seed*.json)
 if (( ${#mnist_results[@]} > 0 )); then

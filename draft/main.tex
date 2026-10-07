@@ -19,15 +19,15 @@
 
 \section{Literature}
 
-Arola-Fernández and Lacasa modeled collective learning as local neural-network training coupled by diffusion of the model parameters \cite{arola2024}. Their effective theory is a disordered Ginzburg--Landau dynamics in which coupling competes with heterogeneity imposed by the private data of each learner. The resulting transition shows how information can propagate through a population of individually limited learners, but the source of heterogeneity is fixed.
+Arola-Fernández and Lacasa described collective learning as local neural-network training coupled by diffusion of the model parameters \cite{arola2024}. Their effective theory is a disordered Ginzburg--Landau dynamics in which coupling competes with heterogeneity imposed by the private data of each learner. The disorder is quenched: it changes the local learning dynamics but does not evolve with the state of the population.
 
-We make this heterogeneity dynamical. All learners can receive the same data distribution, while a slow learning strategy changes how a finite learning budget is allocated. Selection and mutation then act on the learning strategy rather than on the neural parameters themselves \cite{page2002}. The model keeps the local-learning and diffusive-coupling structure of Ref.~\cite{arola2024}, but promotes heterogeneity from a fixed input to an evolving degree of freedom.
+We promote this heterogeneity to a slow dynamical variable. All learners can receive the same data distribution, while a heritable learning strategy changes how a finite gradient budget is allocated. Selection and mutation act on this strategy \cite{page2002}. The local learning law and diffusive coupling are inherited from Ref.~\cite{arola2024}; the new degree of freedom is the adaptive field that drives local learning.
 
 \section{Results}
 
-\subsection{Adaptive heterogeneity}
+\subsection{From neural weighting to an adaptive field}
 
-Consider $N$ coupled neural networks with parameters $\boldsymbol{\theta}_i$. All learners receive the same minibatch $B_t=\{(x_b,y_b)\}_{b=1}^{n}$. Learner $i$ also carries a slow genotype $\mathbf g_i$ that assigns the normalized sample weight
+Learner $i$ has neural parameters $\boldsymbol{\theta}_i$ and a slow genotype $\mathbf g_i$. All learners receive the same minibatch $B_t=\{(x_b,y_b)\}_{b=1}^{n}$, but the genotype changes the relative contribution of its samples,
 \begin{equation}
 w_i(x_b\mid B_t)
 =
@@ -56,49 +56,95 @@ The neural dynamics is
 \sum_b
 w_i(x_b\mid B_t)
 \partial_{\theta_i^\alpha}
-\ell\!\left(
-f(x_b;\boldsymbol{\theta}_i),y_b
-\right)
+\ell\!\left(f(x_b;\boldsymbol{\theta}_i),y_b\right)
 \nonumber\\
-&\quad
-+
+&\quad+
 \frac{\eta\sigma}{N}
 \sum_j q_{ij}
-\left(
-\theta_j^\alpha-\theta_i^\alpha
-\right).
+\left(\theta_j^\alpha-\theta_i^\alpha\right).
 \label{eq:microscopic}
 \end{align}
-The first term creates local competence and the second only shares parameter information. For $T\to\infty$, $w_i\to1$ and Eq.~\eqref{eq:microscopic} reduces to the uniform-learning form of the coupled dynamics in Ref.~\cite{arola2024}.
+For $T\to\infty$, $w_i\to1$ and the genotype no longer affects learning.
 
-The slow strategy is selected by its contribution to collective performance. If $L$ is the validation loss of the full ensemble and $L_{-i}$ the loss without learner $i$, we use
+To coarse grain the weighted gradient, let $z_\mu(x)\geq0$, with $\sum_{\mu=1}^{K}z_\mu(x)=1$, measure the contribution of sample $x$ to learning direction $\mu$. We define
 \begin{equation}
-F_i=L_{-i}-L.
-\label{eq:fitness}
+a_{i\mu}
+=
+\left\langle
+w_i(x)z_\mu(x)
+\right\rangle_x,
+\qquad
+\sum_\mu a_{i\mu}=1.
+\label{eq:allocation}
 \end{equation}
-Selection favors strategies with positive marginal contribution, while mutation prevents permanent fixation. The separation between neural learning and strategy evolution is controlled by a slow timescale $\varepsilon$.
+Thus $a_{i\mu}$ is the fraction of learner $i$'s gradient budget assigned to direction $\mu$. If the representation separates the $K$ directions, $\mathbf h(x)\simeq\mathbf e_\mu$, and they occur with equal frequency, Eq.~\eqref{eq:allocation} reduces to
+\begin{equation}
+a_{i\mu}
+=
+\frac{\exp(g_{i\mu}/T)}
+{\sum_\rho\exp(g_{i\rho}/T)}.
+\label{eq:softmax}
+\end{equation}
+The allocation $\mathbf a_i$ is therefore the coarse-grained effect of the genotype, not an additional microscopic variable.
 
-\subsection{Effective theory}
+\subsection{Adaptive effective theory}
 
-We coarse grain the genotype into an allocation $\mathbf a_i=(a_{i1},\ldots,a_{iK})$ with $a_{i\mu}\geq0$ and $\sum_\mu a_{i\mu}=1$. The variable $m_{i\mu}$ measures competence of learner $i$ along direction $\mu$. A minimal closure of Eq.~\eqref{eq:microscopic} is
-\begin{align}
+The effective dynamics of Ref.~\cite{arola2024} has the form
+\begin{equation}
+\dot m_i
+=
+-m_i^{2D+1}
++
+\delta_i m_i^D
+-
+\gamma m_i
++
+\frac{\sigma}{N}
+\sum_jq_{ij}(m_j-m_i),
+\label{eq:arola-effective}
+\end{equation}
+where the local field $\delta_i$ represents the effect of the private data. Equation~\eqref{eq:allocation} provides the corresponding field when heterogeneity is generated by adaptive learning. For $K$ coarse directions we replace
+\begin{equation}
+\delta_i
+\longrightarrow
+\delta_0 K a_{i\mu}(t).
+\label{eq:adaptive-field}
+\end{equation}
+The factor $K$ makes the uniform allocation $a_{i\mu}=1/K$ recover the homogeneous field $\delta_0$. A fixed nonuniform allocation gives quenched heterogeneity; allowing $\mathbf a_i$ to evolve makes the field adaptive.
+
+We use the first nonlinear case $D=1$. The fast effective dynamics is then
+\begin{equation}
 \dot m_{i\mu}
-&=
-r a_{i\mu}(1-m_{i\mu})
+=
+-m_{i\mu}^{3}
++
+\delta_0 K a_{i\mu}m_{i\mu}
 -
 \gamma m_{i\mu}
 +
 \frac{\sigma}{N}
-\sum_j q_{ij}
-\left(
-m_{j\mu}-m_{i\mu}
-\right),
+\sum_jq_{ij}
+\left(m_{j\mu}-m_{i\mu}\right).
 \label{eq:fast}
-\\
+\end{equation}
+This is the Arola local dynamics with an evolving rather than quenched learning field.
+
+The softmax relation also fixes the form of the slow dynamics. If the genotype coordinates change according to $\dot g_{i\mu}=\varepsilon T F_{i\mu}$, differentiating Eq.~\eqref{eq:softmax} gives
+\begin{equation}
+\dot a_{i\mu}
+=
+\varepsilon a_{i\mu}
+\left(
+F_{i\mu}
+-
+\sum_\rho a_{i\rho}F_{i\rho}
+\right).
+\end{equation}
+We add symmetric mutation at rate $\nu$ and measure fitness by marginal collective contribution,
+\begin{align}
 \dot a_{i\mu}
 &=
-\varepsilon
-a_{i\mu}
+\varepsilon a_{i\mu}
 \left(
 F_{i\mu}
 -
@@ -108,13 +154,11 @@ F_{i\mu}
 \varepsilon\nu
 \left(
 \frac{1}{K}-a_{i\mu}
-\right).
+\right),
 \label{eq:slow}
-\end{align}
-Here $r$ is the local learning rate, $\gamma$ the relaxation rate, and $\nu$ the mutation rate. We close the fitness through the same marginal-performance principle as Eq.~\eqref{eq:fitness},
-\begin{equation}
+\\
 F_{i\mu}
-=
+&=
 \frac{1}{2}
 (1-\bar m_{-i,\mu})^2
 -
@@ -122,34 +166,33 @@ F_{i\mu}
 (1-\bar m_\mu)^2,
 \qquad
 \bar m_\mu=\frac{1}{N}\sum_i m_{i\mu}.
-\label{eq:effective-fitness}
-\end{equation}
-Here $\bar m_{-i,\mu}=(N-1)^{-1}\sum_{j\neq i}m_{j\mu}$. The allocation therefore grows preferentially along directions for which learner $i$ supplies competence that is poorly represented by the rest of the population.
+\label{eq:fitness}
+\end{align}
+Here $\bar m_{-i,\mu}=(N-1)^{-1}\sum_{j\neq i}m_{j\mu}$. Strategies gain fitness by contributing to directions that are poorly represented by the rest of the population.
 
 \subsection{Spontaneous differentiation}
 
-The symmetric state is
+For $\delta_0>\gamma$, Eqs.~\eqref{eq:fast}--\eqref{eq:slow} have the symmetric state
 \begin{equation}
 a_{i\mu}^*=\frac{1}{K},
 \qquad
-m_{i\mu}^*=m^*=\frac{r}{r+\gamma K}.
+m_{i\mu}^*=m^*=\sqrt{\delta_0-\gamma}.
 \label{eq:symmetric}
 \end{equation}
-Let $\lambda>0$ be a nonuniform eigenvalue of the interaction Laplacian. Linearization around Eq.~\eqref{eq:symmetric} gives
+Consider a nonuniform eigenmode of the interaction Laplacian with eigenvalue $\lambda>0$, together with a component perturbation whose sum over $\mu$ vanishes. Linearization gives
 \begin{align}
 \delta\dot m
 &=
 -
 \left(
-\frac{r}{K}
-+
-\gamma
+2m^{*2}
 +
 \frac{\sigma\lambda}{N}
 \right)
 \delta m
 +
-r(1-m^*)\,\delta a,
+\delta_0 K m^*\,\delta a,
+\label{eq:linear-m}
 \\
 \delta\dot a
 &=
@@ -159,48 +202,41 @@ r(1-m^*)\,\delta a,
 -
 \nu\,\delta a
 \right].
+\label{eq:linear-a}
 \end{align}
-The trace is negative, so the symmetric state loses stability when the determinant changes sign,
+The trace is negative. The symmetric state loses stability when the determinant changes sign,
 \begin{equation}
 \nu
 <
 \frac{
-r(1-m^*)^2
+\delta_0m^*(1-m^*)
 }{
-K(N-1)
+(N-1)
 \left(
-\frac{r}{K}
-+
-\gamma
-+
-\frac{\sigma\lambda}{N}
+2m^{*2}+\sigma\lambda/N
 \right)
 }.
 \label{eq:threshold}
 \end{equation}
-The first mode to destabilize is the Fiedler mode $\lambda_2$. For fixed mutation rate, differentiation is therefore possible below
+The first nonuniform mode to destabilize is the Fiedler mode $\lambda_2$. For fixed mutation rate,
 \begin{equation}
 \sigma_c
 =
 \frac{N}{\lambda_2}
 \left[
 \frac{
-r(1-m^*)^2
+\delta_0m^*(1-m^*)
 }{
-K(N-1)\nu
+(N-1)\nu
 }
 -
-\left(
-\frac{r}{K}
-+
-\gamma
-\right)
+2m^{*2}
 \right].
 \label{eq:sigmac}
 \end{equation}
-Stronger diffusive coupling stabilizes the homogeneous population, while weaker mutation favors differentiation. The timescale $\varepsilon$ controls the growth rate but not the threshold.
+Diffusive coupling therefore suppresses differentiation, while lower mutation allows differences in learning strategy to persist. The timescale $\varepsilon$ changes the rate at which the instability develops but not its threshold.
 
-We measure differentiation directly through the dispersion of the slow and fast variables,
+We measure differentiation by
 \begin{equation}
 G
 =
@@ -215,21 +251,22 @@ S
 \|\mathbf m_i-\overline{\mathbf m}\|^2.
 \label{eq:orders}
 \end{equation}
-Both quantities vanish for identical learners and increase as the population separates into distinct learning strategies and phenotypes.
+Both vanish in the symmetric state.
 
 \begin{figure}[htb!]
 \centering
 \includegraphics[width=0.62\linewidth]{figures/fig3.pdf}
 \caption{
-Spontaneous differentiation in the effective theory.
-(a) Genotype diversity $G$ and (b) phenotype specialization $S$ as functions of coupling for increasing mutation rate $\nu$ from light to dark.
+Spontaneous differentiation in the adaptive effective theory.
+(a) Genotype diversity $G$ and (b) phenotype specialization $S$ as functions of coupling.
 Markers denote averages over 32 initial conditions and shaded regions one standard deviation.
-Dotted lines indicate the analytical thresholds from Eq.~\eqref{eq:sigmac}.
+Dotted lines show Eq.~\eqref{eq:sigmac}.
+The numerical dynamics uses $D=1$, $N=10$, $K=3$, $\delta_0=0.35$, $\gamma=0.25$, and $\varepsilon=0.2$.
 }
 \label{fig:adaptive-theory}
 \end{figure}
 
-The nonlinear dynamics follows the analytical prediction. Below the threshold, learning allocations differentiate and produce distinct phenotypes; above it, diffusion restores the symmetric population. This transition is the new degree of freedom absent from the fixed-disorder theory of Ref.~\cite{arola2024}.
+Numerically, the loss of differentiation follows the mutation-dependent thresholds predicted by Eq.~\eqref{eq:sigmac}. The resulting transition has the same competition between local learning and diffusive coupling as Ref.~\cite{arola2024}, but the heterogeneity that drives it is generated and maintained by the learning dynamics itself.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}

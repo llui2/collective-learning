@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 
-VERSION = 2
+VERSION = 3
 
 
 def simulate(args):
@@ -66,31 +66,16 @@ def simulate(args):
         a /= a.sum(axis=-1, keepdims=True)
 
         if step >= tail_start and (step - tail_start) % stride == 0:
-            a_bar = a.mean(axis=3)
-            g_num = np.mean(
-                np.sum((a - a_bar[..., None, :]) ** 2, axis=-1),
+            a_bar = a.mean(axis=3, keepdims=True)
+            genotype_sum += np.mean(
+                np.sum((a - a_bar) ** 2, axis=-1),
                 axis=3,
-            )
-            g_den = 1.0 - np.sum(a_bar**2, axis=-1)
-            genotype_sum += np.divide(
-                g_num,
-                g_den,
-                out=np.zeros_like(g_num),
-                where=g_den > 1e-12,
             )
 
-            p = m / m.sum(axis=-1, keepdims=True)
-            p_bar = p.mean(axis=3)
-            s_num = np.mean(
-                np.sum((p - p_bar[..., None, :]) ** 2, axis=-1),
+            m_bar_population = m.mean(axis=3, keepdims=True)
+            phenotype_sum += np.mean(
+                np.sum((m - m_bar_population) ** 2, axis=-1),
                 axis=3,
-            )
-            s_den = 1.0 - np.sum(p_bar**2, axis=-1)
-            phenotype_sum += np.divide(
-                s_num,
-                s_den,
-                out=np.zeros_like(s_num),
-                where=s_den > 1e-12,
             )
             samples += 1
 
@@ -142,8 +127,8 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--units", type=int, default=10)
     p.add_argument("--components", type=int, default=3)
-    p.add_argument("--runs", type=int, default=12)
-    p.add_argument("--sigma-points", type=int, default=24)
+    p.add_argument("--runs", type=int, default=8)
+    p.add_argument("--sigma-points", type=int, default=20)
     p.add_argument(
         "--mutation-rates",
         type=float,
@@ -154,10 +139,10 @@ def parse_args():
     p.add_argument("--relaxation", type=float, default=0.25)
     p.add_argument("--epsilon", type=float, default=0.2)
     p.add_argument("--dt", type=float, default=0.1)
-    p.add_argument("--time", type=float, default=5000.0)
+    p.add_argument("--time", type=float, default=12000.0)
     p.add_argument("--tail-fraction", type=float, default=0.8)
     p.add_argument("--sample-interval", type=float, default=1.0)
-    p.add_argument("--noise", type=float, default=0.01)
+    p.add_argument("--noise", type=float, default=0.03)
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--output", default="results/adaptive_theory.npz")
     return p.parse_args()

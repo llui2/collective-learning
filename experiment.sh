@@ -80,7 +80,7 @@ try:
 except (OSError, KeyError, ValueError):
     raise SystemExit(1)
 
-raise SystemExit(0 if version == 4 else 1)
+raise SystemExit(0 if version == 5 else 1)
 PY
 }
 

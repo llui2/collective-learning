@@ -75,7 +75,17 @@ w_i(x)z_\mu(x)
 \sum_\mu a_{i\mu}=1.
 \label{eq:allocation}
 \end{equation}
-Thus $a_{i\mu}$ is the fraction of learner $i
+Thus $a_{i\mu}$ is the fraction of learner $i$'s fixed gradient budget spent on direction $\mu$ of the common environment. If $\boldsymbol{\phi}(x)\simeq\mathbf e_\mu$ separates these directions and they occur with equal frequency, Eq.~\eqref{eq:allocation} reduces to
+\begin{equation}
+a_{i\mu}
+=
+\frac{\exp(g_{i\mu}/T)}
+{\sum_\rho\exp(g_{i\rho}/T)}.
+\label{eq:softmax}
+\end{equation}
+The allocation $\mathbf a_i$ is therefore the coarse-grained effect of the genotype. Differentiation corresponds to agents evolving different allocations over the same feature space, rather than receiving different data.
+
+\subsection{Adaptive effective theory}
 
 The effective dynamics of Ref.~\cite{arola2024} has the form
 \begin{equation}

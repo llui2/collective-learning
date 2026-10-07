@@ -73,10 +73,21 @@ for k, nu in enumerate(nus):
 
 ax[0].set_xlabel(r"$\log_{10}\sigma$")
 ax[0].set_ylabel(r"$G$")
-ax[0].legend(loc="upper right")
 
 ax[1].set_xlabel(r"$\log_{10}\sigma$")
 ax[1].set_ylabel(r"$S$")
+
+handles, labels = ax[0].get_legend_handles_labels()
+fig.legend(
+    handles,
+    labels,
+    loc="upper center",
+    ncol=len(labels),
+    frameon=False,
+    bbox_to_anchor=(0.5, 1.01),
+    columnspacing=0.9,
+    handletextpad=0.3,
+)
 
 for axis in ax:
     axis.set_xlim(x.min(), x.max())
@@ -88,6 +99,6 @@ for axis in ax:
 panel_label(ax[0], "(a)")
 panel_label(ax[1], "(b)")
 
-fig.subplots_adjust(left=0.11, right=0.99, bottom=0.22, top=0.96, wspace=0.28)
+fig.subplots_adjust(left=0.11, right=0.99, bottom=0.22, top=0.84, wspace=0.28)
 fig.savefig(OUT, bbox_inches="tight")
 plt.close(fig)

@@ -16,7 +16,7 @@ pip install -r requirements-compute.txt
 ./experiment.sh
 ```
 
-`experiment.sh` is resumable. It now runs the adaptive neural experiment before the original MNIST reproduction. The adaptive quick sweep uses three seeds, ten couplings and 8000 neural updates per coupling. Set `ADAPTIVE_NEURAL_MODE=full` for the denser five-seed sweep. The original reproduction remains controlled by `MODE=quick|full`. Each completed result is committed and pushed immediately; use `FORCE=1` to recompute existing results.
+`experiment.sh` is resumable. It now runs the adaptive neural experiment before the original MNIST reproduction. The default adaptive mode is a one-seed pilot with three couplings and 4000 neural updates per coupling; use `ADAPTIVE_NEURAL_MODE=quick` for the three-seed, ten-coupling sweep and `ADAPTIVE_NEURAL_MODE=full` for the denser five-seed sweep. The original reproduction remains controlled by `MODE=quick|full`. Each completed result is committed and pushed immediately; use `FORCE=1` to recompute existing results.
 
 Tracked outputs are:
 

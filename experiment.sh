@@ -9,8 +9,24 @@ mkdir -p results
 
 python_bin="${PYTHON:-$repo_root/.venv/bin/python}"
 if [[ ! -x "$python_bin" ]]; then
-  python_bin="$(command -v python3)"
+  echo "missing compute environment: $python_bin" >&2
+  echo "run ./setup-minerva.sh first" >&2
+  exit 1
 fi
+
+"$python_bin" - <<'PY'
+import numpy
+import scipy
+import torch
+import torchvision
+
+if not torch.cuda.is_available():
+    raise SystemExit("PyTorch is installed but CUDA is not available")
+
+print("python environment: ok")
+print("torch:", torch.__version__)
+print("gpu:", torch.cuda.get_device_name(0))
+PY
 
 publish() {
   local message="$1"

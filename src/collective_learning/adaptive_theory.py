@@ -10,7 +10,7 @@ from scipy.integrate import solve_ivp
 from tqdm.auto import tqdm
 
 
-VERSION = 4
+VERSION = 5
 
 
 def theory_parameters(args, nus):
@@ -29,23 +29,8 @@ def theory_parameters(args, nus):
     return m_star, sigma_critical
 
 
-def sigma_grid(args, sigma_critical):
-    base = np.logspace(-2.0, 1.0, args.sigma_points)
-    factors = np.asarray(
-        [0.65, 0.75, 0.85, 0.92, 0.97, 1.03, 1.08, 1.15, 1.30, 1.50]
-    )
-
-    refined = []
-    for sigma_c in sigma_critical:
-        if sigma_c <= 0:
-            continue
-        local = sigma_c * factors
-        local = local[(local >= base[0]) & (local <= base[-1])]
-        refined.extend(local)
-
-    if refined:
-        return np.unique(np.concatenate((base, np.asarray(refined))))
-    return base
+def sigma_grid(args):
+    return np.logspace(-2.0, 1.0, args.sigma_points)
 
 
 def rhs(_, state, runs, units, components, learning_rate, relaxation, epsilon, nu, sigma):
@@ -208,7 +193,7 @@ def run_point(task):
 def simulate(args):
     nus = np.asarray(args.mutation_rates, dtype=float)
     m_star, sigma_critical = theory_parameters(args, nus)
-    sigmas = sigma_grid(args, sigma_critical)
+    sigmas = sigma_grid(args)
 
     config = {
         "runs": args.runs,

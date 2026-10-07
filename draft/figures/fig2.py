@@ -12,12 +12,16 @@ from style import DEPTH_COLORS, LINESTYLE, MARKER, MARKERSIZE, apply_style, pane
 apply_style()
 
 ROOT = Path(__file__).resolve().parents[2]
-FILES = sorted((ROOT / "results").glob("mnist_seed*.json"))
+FULL = sorted((ROOT / "results").glob("mnist_seed*.json"))
+QUICK = sorted((ROOT / "results").glob("mnist_quick_seed*.json"))
+FILES = FULL if FULL else QUICK
 OUT = Path(__file__).with_suffix(".pdf")
 
 rows = []
 for path in FILES:
-    rows.extend(json.loads(path.read_text())["results"])
+    data = json.loads(path.read_text())
+    if data.get("complete") is True:
+        rows.extend(data["results"])
 
 depths = sorted({row["depth"] for row in rows})
 sigmas = sorted({row["sigma_released_plot"] for row in rows})
@@ -49,14 +53,14 @@ for k, depth in enumerate(depths):
     l_sem = np.array(l_sem)
     x = np.log10(sigmas)
 
+    marker = ("x", "^", "o")[k]
     ax[0].plot(
         x,
         m_mean,
         color=color,
-        linestyle=LINESTYLE,
-        marker=MARKER,
+        linestyle="",
+        marker=marker,
         markersize=MARKERSIZE,
-        markevery=3,
         label=fr"$D={depth}$",
     )
     ax[0].fill_between(
@@ -72,10 +76,9 @@ for k, depth in enumerate(depths):
         x,
         l_mean / l_mean[0],
         color=color,
-        linestyle=LINESTYLE,
-        marker=MARKER,
+        linestyle="",
+        marker=marker,
         markersize=MARKERSIZE,
-        markevery=3,
     )
     ax[1].fill_between(
         x,

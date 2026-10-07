@@ -66,6 +66,15 @@ else
   echo "skip $theory_out"
 fi
 
+adaptive_out="results/adaptive_theory.npz"
+if [[ ! -s "$adaptive_out" || "${FORCE:-0}" == "1" ]]; then
+  echo "== adaptive effective theory =="
+  "$python_bin" -m collective_learning.adaptive_theory --output "$adaptive_out"
+  publish "adaptive effective theory" "$adaptive_out"
+else
+  echo "skip $adaptive_out"
+fi
+
 mode="${MODE:-quick}"
 
 if [[ "$mode" == "quick" ]]; then

@@ -95,6 +95,63 @@ else
   echo "skip $adaptive_out"
 fi
 
+
+adaptive_neural_complete() {
+  local path="$1"
+  [[ -s "$path" ]] || return 1
+  "$python_bin" - "$path" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1]) as f:
+        data = json.load(f)
+    version = int(data.get("config", {}).get("version", -1))
+except (OSError, json.JSONDecodeError, TypeError, ValueError):
+    raise SystemExit(1)
+
+raise SystemExit(
+    0 if data.get("complete") is True and version == 1 else 1
+)
+PY
+}
+
+if [[ "${RUN_ADAPTIVE_NEURAL:-1}" == "1" ]]; then
+  adaptive_mode="${ADAPTIVE_NEURAL_MODE:-quick}"
+
+  if [[ "$adaptive_mode" == "quick" ]]; then
+    echo "== adaptive neural dynamics: quick sweep =="
+    adaptive_seeds=(0 1 2)
+    adaptive_args=(--quick)
+    adaptive_prefix="adaptive_neural_quick_seed"
+  elif [[ "$adaptive_mode" == "full" ]]; then
+    echo "== adaptive neural dynamics: full sweep =="
+    adaptive_seeds=(0 1 2 3 4)
+    adaptive_args=()
+    adaptive_prefix="adaptive_neural_seed"
+  else
+    echo "unknown ADAPTIVE_NEURAL_MODE=$adaptive_mode (use quick or full)" >&2
+    exit 1
+  fi
+
+  for seed in "${adaptive_seeds[@]}"; do
+    out="results/${adaptive_prefix}${seed}.json"
+    if [[ "${FORCE:-0}" != "1" ]] && adaptive_neural_complete "$out"; then
+      echo "skip $out"
+      continue
+    fi
+
+    echo "-- adaptive neural seed $seed --"
+    "$python_bin" -m collective_learning.adaptive_neural \
+      --seed "$seed" \
+      --device cuda \
+      "${adaptive_args[@]}" \
+      --output "$out"
+
+    publish "adaptive neural $adaptive_mode seed $seed" "$out"
+  done
+fi
+
 mode="${MODE:-quick}"
 
 if [[ "$mode" == "quick" ]]; then

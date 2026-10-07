@@ -70,7 +70,7 @@ mode="${MODE:-quick}"
 
 if [[ "$mode" == "quick" ]]; then
   echo "== MNIST quick iteration =="
-  seeds=(0)
+  seeds=(0 1 2)
   extra_args=(--quick)
   prefix="mnist_quick_seed"
 elif [[ "$mode" == "full" ]]; then

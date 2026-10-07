@@ -29,6 +29,23 @@ print("torch:", torch.__version__)
 print("gpu:", torch.cuda.get_device_name(0))
 PY
 
+result_complete() {
+  local path="$1"
+  [[ -s "$path" ]] || return 1
+  "$python_bin" - "$path" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1]) as f:
+        data = json.load(f)
+except (OSError, json.JSONDecodeError):
+    raise SystemExit(1)
+
+raise SystemExit(0 if data.get("complete") is True else 1)
+PY
+}
+
 publish() {
   local message="$1"
   shift
@@ -52,7 +69,7 @@ fi
 echo "== MNIST baseline =="
 for seed in {0..9}; do
   out="results/mnist_seed${seed}.json"
-  if [[ -s "$out" && "${FORCE:-0}" != "1" ]]; then
+  if [[ "${FORCE:-0}" != "1" ]] && result_complete "$out"; then
     echo "skip $out"
     continue
   fi

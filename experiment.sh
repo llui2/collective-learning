@@ -111,15 +111,20 @@ except (OSError, json.JSONDecodeError, TypeError, ValueError):
     raise SystemExit(1)
 
 raise SystemExit(
-    0 if data.get("complete") is True and version == 1 else 1
+    0 if data.get("complete") is True and version == 2 else 1
 )
 PY
 }
 
 if [[ "${RUN_ADAPTIVE_NEURAL:-1}" == "1" ]]; then
-  adaptive_mode="${ADAPTIVE_NEURAL_MODE:-quick}"
+  adaptive_mode="${ADAPTIVE_NEURAL_MODE:-pilot}"
 
-  if [[ "$adaptive_mode" == "quick" ]]; then
+  if [[ "$adaptive_mode" == "pilot" ]]; then
+    echo "== adaptive neural dynamics: strategy pilot =="
+    adaptive_seeds=(0)
+    adaptive_args=(--pilot)
+    adaptive_prefix="adaptive_neural_pilot_seed"
+  elif [[ "$adaptive_mode" == "quick" ]]; then
     echo "== adaptive neural dynamics: quick sweep =="
     adaptive_seeds=(0 1 2)
     adaptive_args=(--quick)
@@ -130,7 +135,7 @@ if [[ "${RUN_ADAPTIVE_NEURAL:-1}" == "1" ]]; then
     adaptive_args=()
     adaptive_prefix="adaptive_neural_seed"
   else
-    echo "unknown ADAPTIVE_NEURAL_MODE=$adaptive_mode (use quick or full)" >&2
+    echo "unknown ADAPTIVE_NEURAL_MODE=$adaptive_mode (use pilot, quick, or full)" >&2
     exit 1
   fi
 

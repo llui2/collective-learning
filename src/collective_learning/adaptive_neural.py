@@ -1,10 +1,18 @@
-"""Sample-level adaptive neural dynamics in a common MNIST environment.
+"""Adaptive neural dynamics in a common MNIST environment.
 
-Every learner receives the same minibatch. A slow strategy g_i scores each
-sample through a fixed common representation phi(x), and a softmax over the
-minibatch redistributes a fixed gradient budget. Environmental components are
-used only afterwards as diagnostics for coarse-grained allocation and
-competence; they do not enter the learning dynamics.
+Every learner receives the same minibatch. A continuous adaptive strategy g_i
+scores individual samples in a fixed shared representation phi(x),
+
+    w_i(x_b) = B softmax_b[g_i . phi(x_b) / T],
+
+so every learner has exactly the same total gradient budget. The strategy is
+updated from sample-level marginal collective contribution using a natural
+gradient in the softmax family. No coarse environmental partition enters the
+learning or strategy dynamics.
+
+A PCA representation and an unsupervised k-means partition are fixed before
+training. PCA features enter the sample-level strategy. The k-means partition
+is used only to measure coarse allocation and phenotype differentiation.
 """
 
 import argparse
@@ -47,9 +55,10 @@ def load_mnist(device):
 
 
 @torch.no_grad()
-def fit_common_representation(x_train, args, device):
-    gen = torch.Generator(device=device).manual_seed(args.partition_seed)
-    n_fit = min(args.partition_samples, x_train.shape[0])
+def fit_shared_representation(x_train, x_test, args, device):
+    """Fit phi(x) without labels and return standardized PCA coordinates."""
+    gen = torch.Generator(device=device).manual_seed(args.representation_seed)
+    n_fit = min(args.representation_samples, x_train.shape[0])
     ids = torch.randperm(
         x_train.shape[0], generator=gen, device=device
     )[:n_fit]
@@ -62,9 +71,30 @@ def fit_common_representation(x_train, args, device):
     _, eigenvectors = torch.linalg.eigh(covariance)
     basis = eigenvectors[:, -args.representation_dim :]
 
-    z = centered @ basis
-    scale = z.std(dim=0, unbiased=False, keepdim=True).clamp_min(1e-6)
-    z = z / scale
+    fit_phi = centered @ basis
+    scale = fit_phi.std(
+        dim=0, unbiased=False, keepdim=True
+    ).clamp_min(1e-6)
+
+    def transform(x):
+        chunks = []
+        for start in range(0, x.shape[0], 8192):
+            flat_chunk = x[start : start + 8192].flatten(start_dim=1)
+            chunks.append(((flat_chunk - mean) @ basis) / scale)
+        return torch.cat(chunks, dim=0)
+
+    return transform(x_train), transform(x_test)
+
+
+@torch.no_grad()
+def fit_observation_partition(phi_train, phi_test, args, device):
+    """Fit an unsupervised partition used only for coarse observables."""
+    gen = torch.Generator(device=device).manual_seed(args.partition_seed)
+    n_fit = min(args.partition_samples, phi_train.shape[0])
+    ids = torch.randperm(
+        phi_train.shape[0], generator=gen, device=device
+    )[:n_fit]
+    z = phi_train[ids]
 
     first = int(
         torch.randint(
@@ -92,26 +122,28 @@ def fit_common_representation(x_train, args, device):
                 z[mask].mean(dim=0) if mask.any() else centers[mu]
             )
         new_centers = torch.stack(updated)
-        if float((new_centers - centers).square().sum().sqrt()) < 1e-5:
-            centers = new_centers
-            break
+        shift = (new_centers - centers).square().sum().sqrt()
         centers = new_centers
+        if float(shift) < 1e-5:
+            break
 
-    return mean, basis, scale, centers
-
-
-@torch.no_grad()
-def transform(x, mean, basis, scale, chunk_size=8192):
-    chunks = []
-    for start in range(0, x.shape[0], chunk_size):
-        flat = x[start : start + chunk_size].flatten(start_dim=1)
-        chunks.append(((flat - mean) @ basis) / scale)
-    return torch.cat(chunks)
+    train_cluster = torch.cdist(phi_train, centers).argmin(dim=1)
+    test_cluster = torch.cdist(phi_test, centers).argmin(dim=1)
+    return train_cluster, test_cluster
 
 
-@torch.no_grad()
-def cluster_labels(phi, centers):
-    return torch.cdist(phi, centers).argmin(dim=1)
+def cluster_summary(cluster, y, components):
+    sizes = []
+    class_distribution = []
+    for mu in range(components):
+        mask = cluster == mu
+        count = int(mask.sum().item())
+        sizes.append(count)
+        counts = torch.bincount(y[mask], minlength=10).float()
+        if count:
+            counts /= count
+        class_distribution.append(counts.cpu().tolist())
+    return sizes, class_distribution
 
 
 def identical_ensemble(args, device, seed):
@@ -123,24 +155,24 @@ def identical_ensemble(args, device, seed):
     return [copy.deepcopy(base) for _ in range(args.units)]
 
 
-def sample_weights(g, phi, temperature):
-    scores = g @ phi.T / temperature
-    scores = scores - scores.max(dim=1, keepdim=True).values
-    return phi.shape[0] * torch.softmax(scores, dim=1)
-
-
 @torch.no_grad()
-def sample_competence(ensemble, x, y):
+def sample_competence(ensemble, x, y, batch_size=2048):
+    """Return m_i(x)=exp[-ell_i(x)] for every learner and sample."""
     rows = []
     for model in ensemble:
         model.eval()
-        loss = F.cross_entropy(model(x), y, reduction="none")
-        rows.append(torch.exp(-loss))
+        parts = []
+        for start in range(0, y.numel(), batch_size):
+            xb = x[start : start + batch_size]
+            yb = y[start : start + batch_size]
+            loss = F.cross_entropy(model(xb), yb, reduction="none")
+            parts.append(torch.exp(-loss))
+        rows.append(torch.cat(parts))
     return torch.stack(rows)
 
 
-@torch.no_grad()
 def sample_fitness(competence):
+    """Marginal collective contribution at the individual-sample level."""
     units = competence.shape[0]
     mean = competence.mean(dim=0, keepdim=True)
     mean_minus = (units * mean - competence) / (units - 1)
@@ -151,52 +183,154 @@ def sample_fitness(competence):
 
 
 @torch.no_grad()
-def update_strategy(g, phi, fitness, args):
-    # The component rule dot g_mu = epsilon T F_mu is extended to a
-    # continuous common feature space by projecting the sample-wise marginal
-    # contribution field onto phi. Subtracting the sample mean is a softmax
-    # gauge choice and removes feature-independent fitness offsets.
-    centered = fitness - fitness.mean(dim=1, keepdim=True)
-    drive = centered @ phi / phi.shape[0]
-
-    g = g + args.epsilon * args.temperature * drive
-    g = g - args.epsilon * args.exploration * g
-    return g
+def strategy_weights(g, phi, temperature):
+    scores = g @ phi.T / temperature
+    return scores.shape[1] * torch.softmax(scores, dim=1)
 
 
 @torch.no_grad()
-def routing_allocation(g, phi, cluster, components, temperature):
-    p = torch.softmax(g @ phi.T / temperature, dim=1)
-    a = torch.zeros(
-        (g.shape[0], components), device=g.device, dtype=p.dtype
-    )
-    a.scatter_add_(
-        1,
-        cluster.unsqueeze(0).expand(g.shape[0], -1),
-        p,
-    )
-    return a
+def routing_probabilities(g, phi, temperature):
+    return torch.softmax(g @ phi.T / temperature, dim=1)
 
 
 @torch.no_grad()
-def component_competence(competence, cluster, components):
-    out = torch.zeros(
-        (competence.shape[0], components),
-        device=competence.device,
-        dtype=competence.dtype,
-    )
-    counts = torch.bincount(
-        cluster, minlength=components
-    ).to(competence.dtype).clamp_min(1.0)
+def natural_strategy_step(
+    g,
+    phi,
+    fitness,
+    temperature,
+    rate,
+    exploration,
+    ridge,
+    max_step,
+):
+    """Natural-gradient adaptation of the sample-level softmax strategy."""
+    probabilities = routing_probabilities(g, phi, temperature)
+    dim = phi.shape[1]
+    eye = torch.eye(dim, device=phi.device, dtype=phi.dtype)
 
-    for i in range(competence.shape[0]):
-        out[i].scatter_add_(0, cluster, competence[i])
-    return out / counts.unsqueeze(0)
+    updated = g.clone()
+    max_observed_step = 0.0
+
+    for i in range(g.shape[0]):
+        p = probabilities[i]
+        mean_phi = p @ phi
+        centered = phi - mean_phi
+
+        f = fitness[i]
+        mean_f = p @ f
+        centered_f = f - mean_f
+
+        covariance = centered.T @ (p[:, None] * centered)
+        covariance = covariance + ridge * eye
+        cross = (
+            p[:, None]
+            * centered
+            * centered_f[:, None]
+        ).sum(dim=0)
+
+        direction = torch.linalg.solve(covariance, cross)
+        delta = rate * (
+            temperature * direction
+            - exploration * g[i]
+        )
+
+        norm = float(torch.linalg.vector_norm(delta).item())
+        if norm > max_step:
+            delta *= max_step / norm
+            norm = max_step
+
+        max_observed_step = max(max_observed_step, norm)
+        updated[i] += delta
+
+    return updated, max_observed_step
 
 
 def differentiation(x):
     mean = x.mean(dim=0, keepdim=True)
-    return float(((x - mean).square().sum(dim=1)).mean().item())
+    return float(
+        ((x - mean).square().sum(dim=1)).mean().item()
+    )
+
+
+@torch.no_grad()
+def allocation_from_routing(
+    g,
+    phi,
+    cluster,
+    components,
+    temperature,
+):
+    probabilities = routing_probabilities(g, phi, temperature)
+    membership = F.one_hot(
+        cluster, num_classes=components
+    ).to(probabilities.dtype)
+    return probabilities @ membership
+
+
+@torch.no_grad()
+def component_competence(competence, cluster, components):
+    units = competence.shape[0]
+    out = torch.zeros(
+        (units, components),
+        device=competence.device,
+        dtype=competence.dtype,
+    )
+
+    for mu in range(components):
+        mask = cluster == mu
+        if mask.any():
+            out[:, mu] = competence[:, mask].mean(dim=1)
+
+    return out
+
+
+@torch.no_grad()
+def probe_observables(
+    g,
+    phi,
+    cluster,
+    competence,
+    components,
+    temperature,
+):
+    allocation = allocation_from_routing(
+        g, phi, cluster, components, temperature
+    )
+    component_m = component_competence(
+        competence, cluster, components
+    )
+    probabilities = routing_probabilities(
+        g, phi, temperature
+    )
+    entropy = -(
+        probabilities
+        * probabilities.clamp_min(1e-12).log()
+    ).sum(dim=1)
+    entropy /= np.log(probabilities.shape[1])
+
+    return {
+        "G": differentiation(allocation),
+        "S": differentiation(component_m),
+        "entropy": float(entropy.mean().item()),
+        "allocation": allocation,
+        "component_competence": component_m,
+    }
+
+
+def fixed_probe_indices(size, count, seed, device):
+    gen = torch.Generator(device=device).manual_seed(seed)
+    return torch.randperm(
+        size, generator=gen, device=device
+    )[:count]
+
+
+def sigma_grid(args):
+    if args.smoke:
+        return np.asarray([0.01, 0.3, 10.0])
+    if args.quick:
+        return np.logspace(-3.0, 1.5, 10)
+    return np.logspace(-3.0, 1.5, args.sigma_points)
 
 
 def run_sigma(
@@ -204,33 +338,66 @@ def run_sigma(
     args,
     x_train,
     y_train,
+    phi_train,
+    train_cluster,
     x_test,
     y_test,
-    phi_train,
     phi_test,
-    cluster_test,
+    test_cluster,
+    probe_ids,
     device,
 ):
     ensemble = identical_ensemble(args, device, args.seed)
 
-    gen = torch.Generator(device=device).manual_seed(args.seed + 100003)
+    strategy_gen = torch.Generator(device=device).manual_seed(
+        args.seed + 100003
+    )
     g = args.strategy_noise * torch.randn(
         (args.units, args.representation_dim),
-        generator=gen,
+        generator=strategy_gen,
         device=device,
     )
 
-    batch_gen = torch.Generator(device=device).manual_seed(args.seed + 200003)
-    probe_gen = torch.Generator(device=device).manual_seed(args.seed + 300003)
+    batch_gen = torch.Generator(device=device).manual_seed(
+        args.seed + 200003
+    )
+    adjacency = (
+        torch.ones((args.units, args.units), device=device)
+        - torch.eye(args.units, device=device)
+    )
 
-    adjacency = torch.ones((args.units, args.units), device=device)
-    adjacency -= torch.eye(args.units, device=device)
+    x_probe = x_train[probe_ids]
+    y_probe = y_train[probe_ids]
+    phi_probe = phi_train[probe_ids]
+    cluster_probe = train_cluster[probe_ids]
 
-    history_step = []
-    history_g = []
-    history_s = []
-    history_norm = []
+    history = {
+        "step": [],
+        "G": [],
+        "S": [],
+        "entropy": [],
+        "strategy_step": [],
+    }
     budget_error = 0.0
+    max_strategy_step = 0.0
+    last_losses = []
+
+    initial_competence = sample_competence(
+        ensemble, x_probe, y_probe
+    )
+    initial_obs = probe_observables(
+        g,
+        phi_probe,
+        cluster_probe,
+        initial_competence,
+        args.components,
+        args.temperature,
+    )
+    history["step"].append(0)
+    history["G"].append(initial_obs["G"])
+    history["S"].append(initial_obs["S"])
+    history["entropy"].append(initial_obs["entropy"])
+    history["strategy_step"].append(0.0)
 
     progress = tqdm(
         range(args.steps),
@@ -249,244 +416,136 @@ def run_sigma(
         )
         xb = x_train[ids]
         yb = y_train[ids]
-        phib = phi_train[ids]
+        phi_b = phi_train[ids]
 
-        weights = sample_weights(g, phib, args.temperature)
+        weights = strategy_weights(
+            g, phi_b, args.temperature
+        )
         budget_error = max(
             budget_error,
-            float((weights.mean(dim=1) - 1.0).abs().max().item()),
+            float(
+                (weights.mean(dim=1) - 1.0)
+                .abs()
+                .max()
+                .item()
+            ),
         )
 
-        coupled_sgd_step(
+        losses = coupled_sgd_step(
             ensemble,
             [(xb, yb)] * args.units,
             learning_rate=args.learning_rate,
             coupling=sigma,
             weight_decay=args.weight_decay,
             adjacency=adjacency,
-            sample_weights=[weights[i] for i in range(args.units)],
+            sample_weights=[
+                weights[i] for i in range(args.units)
+            ],
         )
+        last_losses.append(float(losses.mean().item()))
+        if len(last_losses) > 100:
+            last_losses.pop(0)
 
         if (step + 1) % args.strategy_every == 0:
-            probe_ids = torch.randint(
-                x_train.shape[0],
-                (args.strategy_probe_size,),
-                generator=probe_gen,
-                device=device,
+            competence = sample_competence(
+                ensemble, x_probe, y_probe
             )
-            xp = x_train[probe_ids]
-            yp = y_train[probe_ids]
-            phip = phi_train[probe_ids]
-
-            competence = sample_competence(ensemble, xp, yp)
             fitness = sample_fitness(competence)
-            g = update_strategy(g, phip, fitness, args)
 
-            cluster_probe = cluster_labels(phip, args.centers)
-            a_probe = routing_allocation(
+            g, strategy_step = natural_strategy_step(
                 g,
-                phip,
+                phi_probe,
+                fitness,
+                temperature=args.temperature,
+                rate=args.strategy_rate,
+                exploration=args.exploration,
+                ridge=args.fisher_ridge,
+                max_step=args.max_strategy_step,
+            )
+            max_strategy_step = max(
+                max_strategy_step, strategy_step
+            )
+
+            obs = probe_observables(
+                g,
+                phi_probe,
                 cluster_probe,
+                competence,
                 args.components,
                 args.temperature,
             )
-            m_probe = component_competence(
-                competence,
-                cluster_probe,
-                args.components,
+            history["step"].append(step + 1)
+            history["G"].append(obs["G"])
+            history["S"].append(obs["S"])
+            history["entropy"].append(obs["entropy"])
+            history["strategy_step"].append(
+                strategy_step
             )
 
-            history_step.append(step + 1)
-            history_g.append(differentiation(a_probe))
-            history_s.append(differentiation(m_probe))
-            history_norm.append(float(g.norm(dim=1).mean().item()))
-
             progress.set_postfix(
-                G=f"{history_g[-1]:.3g}",
-                S=f"{history_s[-1]:.3g}",
+                G=f"{obs['G']:.3g}",
+                S=f"{obs['S']:.3g}",
+                H=f"{obs['entropy']:.3f}",
+                loss=f"{np.mean(last_losses):.3g}",
                 refresh=False,
             )
 
-    with torch.no_grad():
-        test_weights = torch.softmax(
-            g @ phi_test.T / args.temperature,
-            dim=1,
-        )
-        a_test = torch.zeros(
-            (args.units, args.components),
-            device=device,
-            dtype=test_weights.dtype,
-        )
-        a_test.scatter_add_(
-            1,
-            cluster_test.unsqueeze(0).expand(args.units, -1),
-            test_weights,
-        )
-
-    test_competence_sample = sample_competence(
+    test_competence = sample_competence(
         ensemble, x_test, y_test
     )
-    test_competence = component_competence(
-        test_competence_sample,
-        cluster_test,
+    final_obs = probe_observables(
+        g,
+        phi_test,
+        test_cluster,
+        test_competence,
         args.components,
+        args.temperature,
     )
 
-    metrics = [evaluate(model, x_test, y_test) for model in ensemble]
-    accuracy = float(np.mean([metric[0] for metric in metrics]))
-    loss = float(np.mean([metric[1] for metric in metrics]))
+    metrics = [
+        evaluate(model, x_test, y_test)
+        for model in ensemble
+    ]
+    accuracy = float(
+        np.mean([metric[0] for metric in metrics])
+    )
+    loss = float(
+        np.mean([metric[1] for metric in metrics])
+    )
 
-    tail = max(1, int(args.tail_fraction * len(history_g)))
+    tail_count = max(
+        1,
+        int(
+            args.tail_fraction
+            * max(1, len(history["G"]) - 1)
+        ),
+    )
+    tail_g = history["G"][-tail_count:]
+    tail_s = history["S"][-tail_count:]
 
     return {
         "sigma": float(sigma),
-        "G": differentiation(a_test),
-        "G_tail": float(np.mean(history_g[-tail:])),
-        "S": differentiation(test_competence),
-        "S_probe_tail": float(np.mean(history_s[-tail:])),
+        "G_initial": float(history["G"][0]),
+        "G": float(np.mean(tail_g)),
+        "S": float(np.mean(tail_s)),
+        "G_test": final_obs["G"],
+        "S_test": final_obs["S"],
+        "routing_entropy_test": final_obs["entropy"],
         "accuracy": accuracy,
         "loss": loss,
         "budget_error": budget_error,
-        "strategy_norm": float(g.norm(dim=1).mean().item()),
-        "allocation": a_test.detach().cpu().tolist(),
-        "competence": test_competence.detach().cpu().tolist(),
-        "history": {
-            "step": history_step,
-            "G": history_g,
-            "S": history_s,
-            "strategy_norm": history_norm,
-        },
+        "max_strategy_step": max_strategy_step,
+        "allocation_test": (
+            final_obs["allocation"].cpu().tolist()
+        ),
+        "competence_test": (
+            final_obs["component_competence"]
+            .cpu()
+            .tolist()
+        ),
+        "strategy": g.cpu().tolist(),
+        "history": history,
     }
-
-
-def run_sweep(args, x_train, y_train, x_test, y_test, phi_train, phi_test, cluster_test, device):
-    if args.smoke:
-        sigmas = np.asarray([0.03, 1.0, 30.0])
-        args.steps = min(args.steps, 120)
-        args.strategy_every = min(args.strategy_every, 20)
-        args.strategy_probe_size = min(args.strategy_probe_size, 128)
-    elif args.quick:
-        sigmas = np.logspace(-2.0, 2.0, 9)
-        args.steps = min(args.steps, 6000)
-    else:
-        sigmas = np.logspace(-2.0, 2.0, args.sigma_points)
-
-    rows = []
-    out = Path(args.output)
-    out.parent.mkdir(parents=True, exist_ok=True)
-
-    config = vars(args).copy()
-    config.pop("centers", None)
-    config.update(
-        {
-            "version": VERSION,
-            "sample_level_routing": True,
-            "clusters_enter_dynamics": False,
-            "shared_minibatch": True,
-            "identical_initial_networks": True,
-        }
-    )
-
-    for k, sigma in enumerate(sigmas):
-        print(
-            f"\n== adaptive neural sigma={sigma:.6g} "
-            f"({k + 1}/{len(sigmas)}) ==",
-            flush=True,
-        )
-        row = run_sigma(
-            float(sigma),
-            args,
-            x_train,
-            y_train,
-            x_test,
-            y_test,
-            phi_train,
-            phi_test,
-            cluster_test,
-            device,
-        )
-        rows.append(row)
-        out.write_text(
-            json.dumps(
-                {"config": config, "complete": False, "results": rows},
-                indent=2,
-            )
-        )
-
-    out.write_text(
-        json.dumps(
-            {"config": config, "complete": True, "results": rows},
-            indent=2,
-        )
-    )
-    print(f"wrote {out}", flush=True)
-
-
-def run_pilot(args, x_train, y_train, x_test, y_test, phi_train, phi_test, cluster_test, device):
-    temperatures = (0.5, 1.0, 2.0)
-    epsilons = (5.0, 20.0, 80.0)
-    original_temperature = args.temperature
-    original_epsilon = args.epsilon
-    original_steps = args.steps
-
-    args.steps = min(args.steps, args.pilot_steps)
-    rows = []
-
-    for temperature in temperatures:
-        for epsilon in epsilons:
-            args.temperature = temperature
-            args.epsilon = epsilon
-            print(
-                f"\n== pilot T={temperature:g}, epsilon={epsilon:g} ==",
-                flush=True,
-            )
-            row = run_sigma(
-                args.pilot_sigma,
-                args,
-                x_train,
-                y_train,
-                x_test,
-                y_test,
-                phi_train,
-                phi_test,
-                cluster_test,
-                device,
-            )
-            history = row["history"]["G"]
-            initial = max(history[0], 1e-12)
-            row["temperature"] = temperature
-            row["epsilon"] = epsilon
-            row["G_growth"] = float(np.mean(history[-max(1, len(history)//5):]) / initial)
-            rows.append(row)
-            print(
-                f"G={row['G']:.3e} growth={row['G_growth']:.3g} "
-                f"S={row['S']:.3e}",
-                flush=True,
-            )
-
-    args.temperature = original_temperature
-    args.epsilon = original_epsilon
-    args.steps = original_steps
-
-    out = Path(args.output)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    config = vars(args).copy()
-    config.pop("centers", None)
-    config.update(
-        {
-            "version": VERSION,
-            "pilot": True,
-            "sample_level_routing": True,
-            "clusters_enter_dynamics": False,
-        }
-    )
-    out.write_text(
-        json.dumps(
-            {"config": config, "complete": True, "results": rows},
-            indent=2,
-        )
-    )
-    print(f"wrote {out}", flush=True)
 
 
 def run(args):
@@ -497,41 +556,125 @@ def run(args):
     if device.type == "cuda":
         torch.cuda.manual_seed_all(args.seed)
 
-    x_train, y_train, x_test, y_test = load_mnist(device)
+    if args.smoke:
+        args.steps = 120
+        args.strategy_every = 20
+        args.representation_samples = min(
+            args.representation_samples, 1500
+        )
+        args.partition_samples = min(
+            args.partition_samples, 1500
+        )
+        args.probe_samples = min(
+            args.probe_samples, 128
+        )
+        args.batch_size = min(args.batch_size, 64)
+    elif args.quick:
+        args.steps = min(args.steps, 8000)
 
-    print("building fixed common representation", flush=True)
-    mean, basis, scale, centers = fit_common_representation(
-        x_train, args, device
+    x_train, y_train, x_test, y_test = load_mnist(
+        device
     )
-    phi_train = transform(x_train, mean, basis, scale)
-    phi_test = transform(x_test, mean, basis, scale)
-    cluster_test = cluster_labels(phi_test, centers)
-    args.centers = centers
 
-    if args.pilot:
-        run_pilot(
+    print(
+        "building fixed shared representation",
+        flush=True,
+    )
+    phi_train, phi_test = fit_shared_representation(
+        x_train, x_test, args, device
+    )
+
+    print(
+        "building observation-only partition",
+        flush=True,
+    )
+    train_cluster, test_cluster = (
+        fit_observation_partition(
+            phi_train, phi_test, args, device
+        )
+    )
+    train_sizes, class_distribution = cluster_summary(
+        train_cluster, y_train, args.components
+    )
+    test_sizes, _ = cluster_summary(
+        test_cluster, y_test, args.components
+    )
+    print(
+        "observation component sizes:",
+        train_sizes,
+        flush=True,
+    )
+
+    probe_ids = fixed_probe_indices(
+        x_train.shape[0],
+        args.probe_samples,
+        args.probe_seed,
+        device,
+    )
+
+    sigmas = sigma_grid(args)
+    rows = []
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+
+    config = vars(args).copy()
+    config.update(
+        {
+            "version": VERSION,
+            "train_component_sizes": train_sizes,
+            "test_component_sizes": test_sizes,
+            "cluster_class_distribution": (
+                class_distribution
+            ),
+            "representation_uses_labels": False,
+            "partition_uses_labels": False,
+            "partition_enters_dynamics": False,
+            "sample_level_routing": True,
+            "shared_minibatch": True,
+            "identical_initial_networks": True,
+            "strategy_update": (
+                "natural gradient of sample-level "
+                "marginal collective contribution"
+            ),
+        }
+    )
+
+    for sigma_index, sigma in enumerate(sigmas):
+        print(
+            f"\n== adaptive neural sigma={sigma:.6g} "
+            f"({sigma_index + 1}/{len(sigmas)}) ==",
+            flush=True,
+        )
+        row = run_sigma(
+            float(sigma),
             args,
             x_train,
             y_train,
+            phi_train,
+            train_cluster,
             x_test,
             y_test,
-            phi_train,
             phi_test,
-            cluster_test,
+            test_cluster,
+            probe_ids,
             device,
         )
-    else:
-        run_sweep(
-            args,
-            x_train,
-            y_train,
-            x_test,
-            y_test,
-            phi_train,
-            phi_test,
-            cluster_test,
-            device,
-        )
+        rows.append(row)
+
+        payload = {
+            "config": config,
+            "complete": False,
+            "results": rows,
+        }
+        out.write_text(json.dumps(payload, indent=2))
+
+    payload = {
+        "config": config,
+        "complete": True,
+        "results": rows,
+    }
+    out.write_text(json.dumps(payload, indent=2))
+    print(f"wrote {out}", flush=True)
 
 
 def parse_args():
@@ -540,31 +683,33 @@ def parse_args():
     p.add_argument("--components", type=int, default=3)
     p.add_argument("--depth", type=int, default=1)
     p.add_argument("--width", type=int, default=20)
-    p.add_argument("--steps", type=int, default=15000)
-    p.add_argument("--sigma-points", type=int, default=17)
+    p.add_argument("--steps", type=int, default=20000)
+    p.add_argument("--sigma-points", type=int, default=19)
     p.add_argument("--batch-size", type=int, default=96)
-    p.add_argument("--strategy-every", type=int, default=20)
-    p.add_argument("--strategy-probe-size", type=int, default=512)
-    p.add_argument("--epsilon", type=float, default=20.0)
-    p.add_argument("--exploration", type=float, default=0.002)
-    p.add_argument("--temperature", type=float, default=1.0)
+    p.add_argument("--strategy-every", type=int, default=25)
+    p.add_argument("--strategy-rate", type=float, default=2.0)
+    p.add_argument("--exploration", type=float, default=0.0005)
     p.add_argument("--strategy-noise", type=float, default=0.02)
+    p.add_argument("--temperature", type=float, default=0.5)
+    p.add_argument("--fisher-ridge", type=float, default=1e-3)
+    p.add_argument("--max-strategy-step", type=float, default=0.1)
     p.add_argument("--tail-fraction", type=float, default=0.2)
     p.add_argument("--learning-rate", type=float, default=0.005)
     p.add_argument("--weight-decay", type=float, default=0.001)
     p.add_argument("--representation-dim", type=int, default=8)
+    p.add_argument("--representation-samples", type=int, default=6000)
+    p.add_argument("--representation-seed", type=int, default=13)
     p.add_argument("--partition-samples", type=int, default=6000)
     p.add_argument("--partition-seed", type=int, default=17)
     p.add_argument("--kmeans-iterations", type=int, default=30)
-    p.add_argument("--pilot-sigma", type=float, default=0.03)
-    p.add_argument("--pilot-steps", type=int, default=2500)
+    p.add_argument("--probe-samples", type=int, default=512)
+    p.add_argument("--probe-seed", type=int, default=23)
     p.add_argument("--device", default="auto")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument(
         "--output",
         default="results/adaptive_neural_seed0.json",
     )
-    p.add_argument("--pilot", action="store_true")
     p.add_argument("--quick", action="store_true")
     p.add_argument("--smoke", action="store_true")
     return p.parse_args()

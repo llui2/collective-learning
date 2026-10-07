@@ -21,7 +21,7 @@ else
 fi
 
 shopt -s nullglob
-mnist_results=(results/mnist_seed*.json)
+mnist_results=(results/mnist_seed*.json results/mnist_quick_seed*.json)
 if (( ${#mnist_results[@]} > 0 )); then
   "$python_bin" draft/figures/fig2.py
 else

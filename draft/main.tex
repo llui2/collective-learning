@@ -200,29 +200,22 @@ K(N-1)\nu
 \end{equation}
 Stronger diffusive coupling stabilizes the homogeneous population, while weaker mutation favors differentiation. The timescale $\varepsilon$ controls the growth rate but not the threshold.
 
-We measure differentiation on a common $0$--$1$ scale. With $\overline{\mathbf a}=N^{-1}\sum_i\mathbf a_i$ and
-$p_{i\mu}=m_{i\mu}/\sum_\rho m_{i\rho}$,
+We measure differentiation directly through the dispersion of the slow and fast variables,
 \begin{equation}
 G
 =
-\frac{
-N^{-1}\sum_i
-\|\mathbf a_i-\overline{\mathbf a}\|^2
-}{
-1-\|\overline{\mathbf a}\|^2
-},
+\frac{1}{N}
+\sum_i
+\|\mathbf a_i-\overline{\mathbf a}\|^2,
 \qquad
 S
 =
-\frac{
-N^{-1}\sum_i
-\|\mathbf p_i-\overline{\mathbf p}\|^2
-}{
-1-\|\overline{\mathbf p}\|^2
-}.
+\frac{1}{N}
+\sum_i
+\|\mathbf m_i-\overline{\mathbf m}\|^2.
 \label{eq:orders}
 \end{equation}
-Both quantities vanish for identical learners and approach one for a population of pure specialists distributed across the available directions.
+Both quantities vanish for identical learners and increase as the population separates into distinct learning strategies and phenotypes.
 
 \begin{figure}[htb!]
 \centering

@@ -66,16 +66,32 @@ else
   echo "skip $theory_out"
 fi
 
-echo "== MNIST baseline =="
-for seed in {0..9}; do
-  out="results/mnist_seed${seed}.json"
+mode="${MODE:-quick}"
+
+if [[ "$mode" == "quick" ]]; then
+  echo "== MNIST quick iteration =="
+  seeds=(0)
+  extra_args=(--quick)
+  prefix="mnist_quick_seed"
+elif [[ "$mode" == "full" ]]; then
+  echo "== MNIST full reproduction =="
+  seeds=({0..9})
+  extra_args=()
+  prefix="mnist_seed"
+else
+  echo "unknown MODE=$mode (use quick or full)" >&2
+  exit 1
+fi
+
+for seed in "${seeds[@]}"; do
+  out="results/${prefix}${seed}.json"
   if [[ "${FORCE:-0}" != "1" ]] && result_complete "$out"; then
     echo "skip $out"
     continue
   fi
 
   echo "-- seed $seed --"
-  "$python_bin" -m collective_learning.mnist     --runs 1     --seed "$seed"     --device cuda     --output "$out"
+  "$python_bin" -m collective_learning.mnist     --runs 1     --seed "$seed"     --device cuda     "${extra_args[@]}"     --output "$out"
 
-  publish "MNIST baseline seed $seed" "$out"
+  publish "MNIST $mode seed $seed" "$out"
 done

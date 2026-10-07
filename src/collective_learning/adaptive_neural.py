@@ -336,6 +336,8 @@ def fixed_probe_indices(size, count, seed, device):
 def sigma_grid(args):
     if args.smoke:
         return np.asarray([0.01, 0.3, 10.0])
+    if args.pilot:
+        return np.asarray([0.001, 0.1, 10.0])
     if args.quick:
         return np.logspace(-3.0, 1.5, 10)
     return np.logspace(-3.0, 1.5, args.sigma_points)
@@ -586,6 +588,17 @@ def run(args):
             args.probe_samples, 128
         )
         args.batch_size = min(args.batch_size, 64)
+    elif args.pilot:
+        args.steps = min(args.steps, 4000)
+        args.representation_samples = min(
+            args.representation_samples, 3000
+        )
+        args.partition_samples = min(
+            args.partition_samples, 3000
+        )
+        args.probe_samples = min(
+            args.probe_samples, 256
+        )
     elif args.quick:
         args.steps = min(args.steps, 8000)
 
@@ -727,6 +740,7 @@ def parse_args():
         "--output",
         default="results/adaptive_neural_seed0.json",
     )
+    p.add_argument("--pilot", action="store_true")
     p.add_argument("--quick", action="store_true")
     p.add_argument("--smoke", action="store_true")
     return p.parse_args()

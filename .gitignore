@@ -3,12 +3,10 @@ __pycache__/
 .venv/
 .envrc
 .DS_Store
-
-# generated data and figures
-results/
-figures/
-
-# LaTeX
+results/*.pt
+results/*.pth
+results/*.ckpt
+draft/figures/*.pdf
 *.aux
 *.bbl
 *.blg
@@ -17,4 +15,4 @@ figures/
 *.log
 *.out
 *.synctex.gz
-*.pdf
+draft/main.pdf

@@ -52,7 +52,7 @@ Generated PDFs are not committed.
 
 ## Code
 
-`collective.py` contains the reusable coupled-SGD step,
+`src/collective_learning/core.py` contains the reusable coupled-SGD step,
 
 ```text
 theta_i <- theta_i - eta grad L_i
@@ -61,6 +61,6 @@ theta_i <- theta_i - eta grad L_i
 
 and already accepts optional per-sample weights. With no sample weights it reproduces the Arola-Lacasa baseline. The adaptive-genotype model will enter through those weights while leaving the coupling machinery unchanged.
 
-`reproduce_theory.py` computes the released effective Ginzburg-Landau baseline. `reproduce_mnist.py` computes the MNIST neural-network baseline.
+`src/collective_learning/theory.py` computes the released effective Ginzburg--Landau baseline. `src/collective_learning/mnist.py` computes the MNIST neural-network baseline. The root shell scripts set `PYTHONPATH=src` and run these modules directly.
 
 The mathematical formulation of the new model is in `draft/main.tex`.

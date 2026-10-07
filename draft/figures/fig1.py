@@ -29,7 +29,7 @@ magnetization_ad = data["magnetization_adiabatic"]
 loss_ad = data["loss_adiabatic"]
 x = np.log10(sigmas)
 
-fig, ax = plt.subplots(1, 2, figsize=(7.0, 2.65))
+fig, ax = plt.subplots(1, 2, figsize=(7.3, 2.75))
 
 for k, depth in enumerate(depths):
     color = DEPTH_COLORS[k]
@@ -108,7 +108,7 @@ ax[0].legend(loc="best")
 ax[1].set_xlabel(r"$\log_{10}\sigma$")
 ax[1].set_ylabel(r"$\langle L\rangle / \langle L\rangle_{\sigma_{\min}}$")
 
-axins = ax[1].inset_axes([0.63, 0.58, 0.32, 0.34])
+axins = ax[1].inset_axes([0.68, 0.64, 0.27, 0.28])
 for k, depth in enumerate(depths):
     color = DEPTH_COLORS[k]
     marker = DEPTH_MARKERS[k]

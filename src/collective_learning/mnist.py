@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from torchvision import datasets
 
-from collective import NeuralUnit, coupled_sgd_step, cross_accuracy, evaluate, mean_parameter
+from .core import NeuralUnit, coupled_sgd_step, cross_accuracy, evaluate, mean_parameter
 
 
 def resolve_device(name):

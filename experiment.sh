@@ -42,7 +42,7 @@ theory_out="results/theory_baseline.npz"
 if [[ ! -s "$theory_out" || "${FORCE:-0}" == "1" ]]; then
   echo "== effective-theory baseline =="
   echo "workers: ${THEORY_JOBS:-8}"
-  "$python_bin" reproduce_theory.py     --jobs "${THEORY_JOBS:-8}"     --output "$theory_out"
+  "$python_bin" -m collective_learning.theory     --jobs "${THEORY_JOBS:-8}"     --output "$theory_out"
   publish "theory baseline" "$theory_out"
 else
   echo "skip $theory_out"
@@ -57,7 +57,7 @@ for seed in {0..9}; do
   fi
 
   echo "-- seed $seed --"
-  "$python_bin" reproduce_mnist.py     --runs 1     --seed "$seed"     --device cuda     --output "$out"
+  "$python_bin" -m collective_learning.mnist     --runs 1     --seed "$seed"     --device cuda     --output "$out"
 
   publish "MNIST baseline seed $seed" "$out"
 done

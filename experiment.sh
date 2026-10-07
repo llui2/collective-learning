@@ -68,7 +68,23 @@ else
 fi
 
 adaptive_out="results/adaptive_theory.npz"
-if [[ ! -s "$adaptive_out" || "${FORCE:-0}" == "1" ]]; then
+adaptive_current() {
+  [[ -s "$adaptive_out" ]] || return 1
+  "$python_bin" - "$adaptive_out" <<'PY'
+import sys
+import numpy as np
+
+try:
+    data = np.load(sys.argv[1])
+    version = int(data["version"])
+except (OSError, KeyError, ValueError):
+    raise SystemExit(1)
+
+raise SystemExit(0 if version == 2 else 1)
+PY
+}
+
+if [[ "${FORCE:-0}" == "1" ]] || ! adaptive_current; then
   echo "== adaptive effective theory =="
   "$python_bin" -m collective_learning.adaptive_theory --output "$adaptive_out"
   publish "adaptive effective theory" "$adaptive_out"

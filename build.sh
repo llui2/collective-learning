@@ -28,7 +28,7 @@ else
 fi
 
 shopt -s nullglob
-adaptive_neural_results=(results/adaptive_neural_seed*.json results/adaptive_neural_quick_seed*.json)
+adaptive_neural_results=(results/adaptive_neural_seed*.json results/adaptive_neural_quick_seed*.json results/adaptive_neural_pilot_seed*.json)
 if (( ${#adaptive_neural_results[@]} > 0 )); then
   "$python_bin" draft/figures/fig4.py
 else

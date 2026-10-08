@@ -205,8 +205,10 @@ The equally weighted collective prediction is
 
 After pulling the completed results, `./build.sh` creates
 `draft/figures/fig8.pdf` (validation improvement in collective loss and
-cross-entropy, adaptive **minus matched uniform performance**) and
-`draft/figures/fig9.pdf` (routing differentiation and entropy). For Fig. 8,
+validation accuracy (percentage points), **matched uniform collective loss minus adaptive collective loss**) and
+`draft/figures/fig9.pdf` (routing differentiation and entropy), and
+`draft/figures/fig10.pdf` (time-resolved collective gain and differentiation
+at intermediate coupling). For Fig. 8,
 positive values mean the adaptive learners **outperformed** uniform learning
 at the same coupling, time, initialization and data stream. Both plots
 display all completed conditions at one common SGD horizon and show

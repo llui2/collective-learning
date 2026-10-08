@@ -43,6 +43,47 @@ When completed on Minerva, push only the compact summary (the full trajectories 
     git commit -m "Add paired learning-speed results"
     git push origin main
 
+## Adaptive task allocation
+
+    ./experiment.sh adaptive --smoke
+    ./experiment.sh adaptive --jobs 12
+
+The positive fixed-specialization result motivates a new **mutation-selection**
+experiment, separate from the original fixed-allocation replication.
+Four depth-one, width-two deep-linear learners study two orthogonal tasks,
+with 400 SGD updates per experiment. Default conditions compare coupling
+\`0, 0.2, 1, 3\` at initialization scale \`0.03\`, with proposal intervals of
+20 or 60 SGD updates and 12 paired random seeds.
+
+Five controls share independent initial networks, local SGD budgets, and
+minibatches: uniform study, fixed complementary specialists, frozen weak
+heterogeneity, neutral mutation drift, and adaptive mutation-selection.
+The last three begin from the same weakly heterogeneous allocation.
+At each adaptation round a single allocation mutates, without rewarding
+diversity. **The evolving condition selects the mutation only if its
+counterfactual rollout has lower population-mean individual validation
+loss** than the unchanged rollout. Both use identical training examples,
+neural updates and initial parameters. This is an *oracle-guided global
+selection rule* using extra validation data and extra computation. It is
+not a decentralized model of self-organization.
+
+The key readouts are first-passage times to individual test losses 0.2
+and 0.1, allocation polarization (0 = generalists, 1 = fully polarized),
+allocation variance, task coverage and functional diversity. Results also
+include neutral drift, which can develop allocation diversity without
+fitness-based selection. For each selection window, threshold times are
+only resolved to that window length. We must check that evolving
+allocations beat uniform and frozen allocations, and polarize more than
+neutral drift, before claiming beneficial division of labor.
+
+The command writes full histories to \`results/microscopic_adaptive.json\`,
+a compact shareable \`results/microscopic_adaptive_summary.json\`, and a
+two-panel PDF. Run on Minerva, then push **only the summary**:
+
+    git add -f results/microscopic_adaptive_summary.json
+    git commit -m "Add adaptive allocation experiment results"
+    git push origin main
+
 ## Files
 
 - `src/collective_learning/core.py`: baseline diffusive coupled SGD and weighted local loss.

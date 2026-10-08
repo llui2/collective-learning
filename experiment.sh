@@ -23,6 +23,10 @@ case "${1:-}" in
     shift
     "$python_bin" -m collective_learning.microscopic "$@"
     ;;
+  adaptive)
+    shift
+    "$python_bin" -m collective_learning.adaptive "$@"
+    ;;
   smoke)
     "$python_bin" -m unittest discover -s tests -q
     "$python_bin" -m collective_learning.theory \
@@ -31,7 +35,7 @@ case "${1:-}" in
       --smoke --device "${DEVICE:-cpu}" --output results/mnist_smoke.json
     ;;
   *)
-    echo "Usage: ./experiment.sh {theory|mnist|microscopic|smoke}" >&2
+    echo "Usage: ./experiment.sh {theory|mnist|microscopic|adaptive|smoke}" >&2
     exit 2
     ;;
 esac

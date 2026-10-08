@@ -92,6 +92,40 @@ PYTHONPATH=src .venv/bin/python -m collective_learning.adaptive_neural \\
 ```
 
 
+## Collective performance in the effective theory
+
+The adaptive effective theory now measures collective performance using the
+same loss that defines marginal-contribution fitness,
+
+\[
+L=\frac12\sum_\mu(1-\bar m_\mu)^2,\qquad
+L_0=\frac K2(1-\sqrt{\delta_0-\gamma})^2.
+\]
+
+A positive `L_0-L` is a collective improvement relative to the homogeneous
+learning state; it is distinct from strategy differentiation `G` and
+phenotype differentiation `S`. The recorded quantity
+`covariance_mean` is the sum of the population covariances between
+allocation and competence, which appears exactly in the population-averaged
+fast equation. These statistics are added to the same version-7 adaptive
+effective-theory trajectories, rather than evaluated in a separate model.
+
+Minerva recomputes the version-7 adaptive theory when the existing result
+is older. To run only the effective-theory update without starting a new
+adaptive neural sweep:
+
+```bash
+RUN_ADAPTIVE_NEURAL=0 ./experiment.sh
+```
+
+After the results have been pushed, `./build.sh` produces
+`draft/figures/fig7.pdf` with the collective gain and allocation-competence
+covariance for the three exploration rates. Retain the convergence
+diagnostics (`residual`, `final_time`) when interpreting the gain
+near a transition. Do not infer neural-network accuracy gains from the
+effective-model loss.
+
+
 ## Long-time specialization and frozen-strategy control
 
 The quick sweep already provides all ten values for a finite-time coupling plot in `draft/figures/fig5.pdf`. It plots *held-out test* routing differentiation \(R\) and per-sample phenotype differentiation \(S_x\) after 8000 SGD steps, with the standard deviation across the completed quick seeds. This is a finite-time dependence, not an inferred stationary phase boundary.

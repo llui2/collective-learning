@@ -60,13 +60,12 @@ On your Mac, with `latexmk` already installed:
     git pull --ff-only
     ./build.sh
 
-This generates the MoE figure and produces two PDFs:
+This regenerates the MoE and Arola figures and produces two PDFs:
 
 - `draft/main.pdf`: current MoE physical theory.
-- `draft/arola.pdf`: one-section account of the microscopic allocation model, fixed-specialization benefit, and unsuccessful adaptive rule.
+- `draft/arola.pdf`: one-section account of the learning equations and the observed fixed-versus-evolving specialization outcomes, with a paired comparison plot.
 
-The one-page Arola note reports the committed 12-seed results; it requires
-no neural retraining or additional figure generation. The original
+The Arola note uses committed paired runs to plot the transient learning advantage; it requires no neural retraining. The original
 experiments and their datasets remain available separately. The baseline
 figure scripts can still be run independently if needed.
 
@@ -91,6 +90,7 @@ Their implementations and tests remain available. The Arola baseline and special
 - `src/collective_learning/moe_layer.py`: trainable token-level router, feed-forward experts, top-k masks and capacity.
 - `tests/test_moe.py`: tests against PyTorch autograd, finite-difference Jacobian and symmetry/collapse modes.
 - `draft/main.tex`, `draft/refs.bib`: current MoE mathematical starting point and references.
-- `draft/arola.tex`: single-section model, numerical outcome, and limitation.
+- `draft/arola.tex`: one-section model, paired advantage plot, and limitation.
+- `draft/figures/arola.py`: plot from committed paired results.
 - `draft/figures/moe.py`: main two-panel numerical figure.
 - `src/collective_learning/core.py`, `theory.py`, `mnist.py`, `microscopic.py`, `adaptive.py`: earlier models.

@@ -3,12 +3,13 @@
 \usepackage{lmodern}
 \usepackage{amsmath}
 \usepackage{microtype}
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage[numbers]{natbib}
 \usepackage[margin=1in]{geometry}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue!65!black,urlcolor=blue!65!black]{hyperref}
 
-\title{Adaptive specialization in coupled learners}
+\title{Specialization in coupled learners}
 \author{}
 \date{}
 
@@ -17,50 +18,47 @@
 
 \section{Task allocation}
 
-We tested whether specialization could emerge in the
-parameter-coupled networks of Arola-Fern\'andez and Lacasa
-\cite{arola2024}. Four deep-linear learners were trained on two
-independent regression tasks, $A$ and $B$, with each network
-evaluated on both. Learner $i$ allocated a fraction
-$a_i \in [0,1]$ of its training effort to $A$:
+We tested whether division of labor could emerge among the coupled
+learners of Arola-Fern\'andez and Lacasa \cite{arola2024}.
+Each network learns two tasks, with allocation $a_i$ controlling its
+training effort:
 \begin{equation}
 L_i = a_i L_A(\theta_i) + (1-a_i)L_B(\theta_i)
-    + \frac{\gamma}{2}\|\theta_i\|^2.
-\label{eq:loss}
++ \frac{\gamma}{2}\|\theta_i\|^2,
+\qquad
+\theta_i^{t+1} = \theta_i^t - \eta\nabla L_i
++ \frac{\eta\sigma}{N}\sum_j A_{ij}(\theta_j^t-\theta_i^t).
+\label{eq:learning}
 \end{equation}
-The allocation changed the local gradient, while diffusive coupling
-transferred parameters between networks:
-\begin{equation}
-\theta_i(t+1) = \theta_i(t) - \eta \nabla_{\theta_i} L_i
-+ \frac{\eta\sigma}{N}\sum_j A_{ij}
-\bigl(\theta_j(t)-\theta_i(t)\bigr).
-\label{eq:dynamics}
-\end{equation}
-Here $\sigma$ controls coupling and $A_{ij}=1$ for distinct
-learners. We compared generalists ($a_i=1/2$) with complementary
-specialists ($a_i=0$ or $1$), keeping total learning effort fixed.
+Here $\sigma$ controls parameter exchange. Every learner is evaluated
+on both tasks, regardless of its allocation.
 
-At $\sigma=1$, imposed specialists reached mean individual test
-loss $0.2$ after a median of $150$ updates, versus $185$ for
-generalists (faster in 11 of 12 paired runs). Without coupling,
-specialists could not learn their unassigned task within the
-600-update horizon. Thus specialization helped only when the
-networks could exchange what they learned.
+Assigning complementary specialists ($a_i=0$ or $1$) gives a
+\emph{transient learning-speed advantage} over generalists
+($a_i=1/2$) when coupling is sufficient (Fig.~\ref{fig:results}a).
+Without coupling, specialists cannot learn their unassigned task.
 
-We then let allocations mutate one learner at a time, retaining
-a change only if it reduced population-mean validation loss after
-20 additional training updates. This did \emph{not} recover the
-advantage: across 12 seeds at $\sigma=1$, fixed specialists
-reached loss $0.2$ after $163$ updates on average, compared with
-$190$ for generalists, $190$ for neutral mutation drift, and
-$193$ for the selected mutations.
+We then let individual allocations mutate, retaining a mutation
+when a short validation rollout improved collective loss.
+This rule did not discover the beneficial division of labor:
+the initially faster adaptation later fell behind generalists
+(Fig.~\ref{fig:results}b).
 
-The limitation is in the proposed adaptation rule, not the
-original coupling model. Complementary specialization requires
-coordinated allocations, but selection evaluated isolated
-mutations using short-term, global validation loss. This mismatch
-could prevent discovery of the useful configuration; the
-experiments do not establish that it caused the failure.
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/arola.pdf}
+\caption{Learning advantage relative to generalists, averaged over
+12 paired runs at $\sigma=1$. Positive values indicate lower
+individual test loss. (a) Imposed specialization.
+(b) Assigned specialists, selected mutations and neutral drift
+in the adaptive experiment.}
+\label{fig:results}
+\end{figure}
+
+The useful allocation is \emph{complementary}, whereas the rule
+evaluates isolated changes using short-term, global validation
+loss. This mismatch may prevent coordinated specialization;
+the experiment does not establish it as the cause of failure.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}

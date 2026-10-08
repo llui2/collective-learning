@@ -9,6 +9,7 @@ export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 export MPLBACKEND=Agg
 "$python_bin" -m unittest discover -s tests -q
 "$python_bin" draft/figures/moe.py
+"$python_bin" draft/figures/arola.py
 if command -v latexmk >/dev/null 2>&1; then
   (
     cd draft

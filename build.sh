@@ -46,6 +46,7 @@ fi
 # Performance from actual coupled neural networks, compared with matched controls.
 "$python_bin" draft/figures/fig8.py
 "$python_bin" draft/figures/fig9.py
+"$python_bin" draft/figures/fig10.py
 
 mnist_results=(results/mnist_seed*.json results/mnist_quick_seed*.json)
 if (( ${#mnist_results[@]} > 0 )); then

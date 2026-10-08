@@ -153,3 +153,65 @@ Synthetic invariant tests, without downloading MNIST, are available through:
 ```bash
 PYTHONPATH=src .venv/bin/python -m unittest discover -s tests
 ```
+
+
+## Neural-network performance experiment
+
+To test whether coupling and adaptive specialization improve *actual neural-network
+performance*, run the independent resumable script on Minerva:
+
+```bash
+cd ~/collective-learning
+git pull --ff-only
+PERFORMANCE_MODE=smoke bash neural-performance.sh
+PERFORMANCE_MODE=quick bash neural-performance.sh
+```
+
+This is not the Ginzburg--Landau effective theory. It trains ten coupled MNIST
+neural networks from identical weights with exactly the same minibatch stream.
+The only difference between the three matched protocols is their strategy:
+
+- `uniform`: all samples have equal weight;
+- `frozen`: a small, random sample preference is held constant;
+- `adaptive`: the same preference adapts slowly using the existing
+  marginal-collective-contribution rule.
+
+The adaptation law, diffusive coupling and per-learner learning-budget
+normalization are unchanged. The quick scan uses six couplings,
+`sigma = 0.003, 0.03, 0.1, 0.3, 1, 3`, three adaptation rates,
+`r = 0.2, 0.7, 2`, and two exploration strengths,
+`nu = 0.0005, 0.03`. It runs one seed and 8000 SGD steps per condition,
+saving/pushing each condition separately. Full mode
+(`PERFORMANCE_MODE=full bash neural-performance.sh`) extends to three
+seeds and 12000 steps. Override the exploration scan through
+`PERFORMANCE_EXPLORATIONS="0.0005 0.03"` if needed.
+
+The 60000 MNIST training samples are divided into three mutually disjoint
+pools: ordinary SGD training, a small strategy-fitness probe, and a
+2048-sample validation set. All conditions use the same split and minibatch
+draws for a given seed. The validation set is used for time-resolved
+performance comparisons; the official MNIST test set is evaluated **once,
+at the predeclared final step** for each condition.
+
+For all learners `i`, let `p_i(y|x)` be the softmax class probability.
+The equally weighted collective prediction is
+`p_bar(y|x) = mean_i p_i(y|x)`. We report:
+
+- ensemble accuracy and cross-entropy of `p_bar`;
+- collective loss `L = 0.5 * mean_x (1 - p_bar(y_true|x))^2`,
+  the sample-level analogue of the effective-theory performance objective;
+- routing differentiation `R`, sample-level competence differentiation
+  `S_sample`, normalized routing entropy and the gradient-budget error.
+
+After pulling the completed results, `./build.sh` creates
+`draft/figures/fig8.pdf` (validation improvement in collective loss and
+cross-entropy, adaptive **minus matched uniform performance**) and
+`draft/figures/fig9.pdf` (routing differentiation and entropy). For Fig. 8,
+positive values mean the adaptive learners **outperformed** uniform learning
+at the same coupling, time, initialization and data stream. Both plots
+display all completed conditions at one common SGD horizon and show
+seed-to-seed standard deviations when multiple seeds exist.
+
+A positive performance gain is an empirical question. These scripts do
+not presume it exists or claim that a specialized state must improve
+ordinary test accuracy. Do not select hyperparameters using the test results.

@@ -253,6 +253,27 @@ The numerical dynamics uses $D=1$, $N=10$, $K=3$, $\delta_0=0.35$, $\gamma=0.25$
 
 The nonlinear dynamics follows the $\nu$-dependent thresholds predicted by Eq.~\eqref{eq:sigmac}. Below the threshold, learners separate into different allocations of the common environment and develop distinct phenotypes. Above it, diffusive coupling restores the symmetric population. The transition therefore arises from adaptive heterogeneity rather than from a prescribed partition of the learning problem.
 
+Differentiation alone does not establish a collective advantage. We measure performance by the same collective error used to construct the fitness,
+\begin{equation}
+L=\frac12\sum_\mu(1-\bar m_\mu)^2,
+\qquad
+L_0=\frac K2(1-m^*)^2,
+\label{eq:performance}
+\end{equation}
+where $L_0$ is the homogeneous reference. Averaging Eq.~\eqref{eq:fast} over learners removes diffusion and gives
+\begin{equation}
+\dot{\bar m}_\mu
+=
+-\overline{m_\mu^3}
++\delta_0K\big[
+\bar a_\mu\bar m_\mu
++\operatorname{Cov}_i(a_{i\mu},m_{i\mu})
+\big]
+-\gamma\bar m_\mu.
+\label{eq:mean-competence}
+\end{equation}
+Allocation aligned with competence contributes positively through the covariance, whereas the cubic term penalizes large local amplitudes. Weak coupling can leave directions insufficiently covered, while strong coupling suppresses differentiation. A collective performance benefit is therefore possible at intermediate coupling but is not implied by the instability threshold alone.
+
 \bibliographystyle{unsrtnat}
 \bibliography{refs}
 

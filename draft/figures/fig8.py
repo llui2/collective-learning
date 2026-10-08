@@ -66,7 +66,7 @@ for rate, exploration in conditions:
         for sigma in sigmas
     ])
     deviations = np.array([
-        np.asarray(points[(rate, sigma)]).std(axis=0)
+        np.asarray(points[(rate, exploration, sigma)]).std(axis=0)
         for sigma in sigmas
     ])
     k = rates.index(rate)
@@ -79,10 +79,9 @@ for rate, exploration in conditions:
             x, values[:, j], color=color, marker=marker,
             linewidth=1.0, linestyle=linestyle,
             markersize=0.82 * MARKERSIZE,
-            label=fr"$r={rate:g},,
-u={exploration:g}$" if j == 0 else None,
+            label=fr"$r={rate:g},\,\nu={exploration:g}$" if j == 0 else None,
         )
-        if any(len(points[(rate, sigma)]) > 1 for sigma in sigmas):
+        if any(len(points[(rate, exploration, sigma)]) > 1 for sigma in sigmas):
             ax[j].fill_between(
                 x, values[:, j] - deviations[:, j],
                 values[:, j] + deviations[:, j],

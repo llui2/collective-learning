@@ -1,17 +1,12 @@
-"""Shared figure style derived from the Arola--Lacasa plotting scripts."""
+"""Shared typography for the two baseline figures."""
 
 import matplotlib as mpl
-
 
 DEPTH_COLORS = ("deepskyblue", "blue", "darkblue")
 DEPTH_MARKERS = ("x", "^", "o")
 ADIABATIC_LINESTYLE = "-."
 MARKERSIZE = 4.5
 
-# Kept for figure scripts that have not yet been split into protocol-specific channels.
-LINESTYLE = "-."
-MARKER = "."
-    
 
 def apply_style():
     mpl.rcParams.update(

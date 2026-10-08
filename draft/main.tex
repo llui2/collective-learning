@@ -1,280 +1,116 @@
-\documentclass[11pt,reqno]{amsart}
-
+\documentclass[11pt]{article}
 \usepackage[T1]{fontenc}
-\usepackage{newtxtext,newtxmath}
-\let\Bbbk\relax
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
 \usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage[numbers]{natbib}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
 
-\begin{document}
+\title{Collective learning from coupled neural parameters}
+\author{}
+\date{}
 
-\title{Spontaneous differentiation in collective learning}
+\begin{document}
 \maketitle
 
-\section{Literature}
+\section{Microscopic dynamics}
 
-Arola-Fernández and Lacasa described collective learning as local neural-network training coupled by diffusion of the model parameters \cite{arola2024}. Their effective theory is a disordered Ginzburg--Landau dynamics in which coupling competes with heterogeneity imposed by the private data of each learner. This heterogeneity is quenched: it affects local learning but does not evolve with the population.
-
-We instead allow the source of heterogeneity to adapt. All learners are exposed to the same environment and have the same total learning budget, but a slow strategy redistributes that budget across the available samples. The strategy follows a fitness-driven replicator dynamics with weak symmetric exploration, while diffusion continues to exchange parameter information between learners \cite{page2002}. The resulting problem is whether a symmetric population can spontaneously differentiate into learners that specialize on different parts of a common environment.
-
-\section{Results}
-
-\subsection{Adaptive allocation in a common environment}
-
-Learner $i$ has neural parameters $\boldsymbol{\theta}_i$ and a slow adaptive strategy $\mathbf g_i$. All learners receive the same minibatch $B_t=\{(x_b,y_b)\}_{b=1}^{n}$ and use the same fixed representation $\boldsymbol{\phi}(x)$ of the environment. The strategy defines a sample preference
+Arola-Fernández and Lacasa consider $N$ neural networks, each trained on
+private data and coupled through their parameters \cite{arola2024}.
+Let $\theta_i^\alpha$ denote one neural parameter of learner $i$ and
+$\mathcal L_i$ its local training loss. The update is
 \begin{equation}
-w_i(x_b\mid B_t)
-=
-n
-\frac{
-\exp\!\left[
-\mathbf g_i^{\mathsf T}\boldsymbol{\phi}(x_b)/T
-\right]
-}{
-\sum_c
-\exp\!\left[
-\mathbf g_i^{\mathsf T}\boldsymbol{\phi}(x_c)/T
-\right]
-},
-\qquad
-\frac{1}{n}\sum_b w_i(x_b\mid B_t)=1.
-\label{eq:weights}
-\end{equation}
-The normalization fixes the gradient budget of every learner. The adaptive strategy changes where learning effort is spent, not how much total effort is available.
-
-The neural dynamics is
-\begin{align}
 \theta_i^\alpha(t+1)
-&=
+=
 \theta_i^\alpha(t)
--
-\frac{\eta}{n}
-\sum_b
-w_i(x_b\mid B_t)
-\partial_{\theta_i^\alpha}
-\ell\!\left(f(x_b;\boldsymbol{\theta}_i),y_b\right)
-\nonumber\\
-&\quad+
-\frac{\eta\sigma}{N}
-\sum_jq_{ij}
-\left(\theta_j^\alpha-\theta_i^\alpha\right).
+-\eta\,\partial_{\theta_i^\alpha}\mathcal L_i
++\frac{\eta\sigma}{N}
+\sum_j q_{ij}\left(\theta_j^\alpha-\theta_i^\alpha\right).
 \label{eq:microscopic}
-\end{align}
-For $T\to\infty$, $w_i\to1$ and Eq.~\eqref{eq:microscopic} reduces to uniform learning in the common environment. Finite $T$ allows different strategies to emphasize different subsets of the same data stream.
-
-To coarse grain this weighting, let $z_\mu(x)\geq0$, with $\sum_{\mu=1}^{K}z_\mu(x)=1$, denote a soft partition of the common feature space into $K$ learning directions. We define
-\begin{equation}
-a_{i\mu}
-=
-\left\langle
-w_i(x)z_\mu(x)
-\right\rangle_x,
-\qquad
-\sum_\mu a_{i\mu}=1.
-\label{eq:allocation}
 \end{equation}
-Thus $a_{i\mu}$ is the fraction of learner $i$'s budget spent on direction $\mu$. If $\boldsymbol{\phi}(x)\simeq\mathbf e_\mu$ separates these directions and they occur with equal frequency,
-\begin{equation}
-a_{i\mu}
-=
-\frac{\exp(g_{i\mu}/T)}
-{\sum_\rho\exp(g_{i\rho}/T)}.
-\label{eq:softmax}
-\end{equation}
-The allocation $\mathbf a_i$ is therefore the coarse-grained effect of the adaptive strategy. Differentiation means that learners develop different allocations over the same environment, rather than receiving different environments.
+The private data determine the local gradient, while $q_{ij}$ describes
+the interaction network.
 
-\subsection{Adaptive effective theory}
+\section{Effective theory}
 
-The effective dynamics of Ref.~\cite{arola2024} is
+For deep linear networks, Ref.~\cite{arola2024} derives an approximate
+reduction to a scalar variable $m_i$ that coarse-grains neural parameters
+across layers:
 \begin{equation}
 \dot m_i
 =
--m_i^{2D+1}
-+
-\delta_i m_i^D
--
-\gamma m_i
-+
-\frac{\sigma}{N}
-\sum_jq_{ij}(m_j-m_i),
-\label{eq:arola-effective}
+\delta_i m_i^D-m_i^{2D+1}-\hat\gamma m_i
++\frac{\hat\sigma}{N}\sum_jq_{ij}(m_j-m_i).
+\label{eq:effective}
 \end{equation}
-where the local field $\delta_i$ represents heterogeneity in the private learning environment. In the present model the corresponding heterogeneity is generated by the allocation itself. To lowest order around the homogeneous state, we take the effective learning drive to be proportional to the allocated budget,
+Here $D$ is the number of hidden layers,
+$\delta_i=\langle \hat x_i\hat y_i\rangle$ is the effective
+input-output correlation of the private data, and
+$\hat\gamma,\hat\sigma$ are rescaled parameters.
+The disorder in $\delta_i$ is quenched, not an adaptive allocation.
+The mean effective loss has the scaling
 \begin{equation}
-\delta_i
-\longrightarrow
-\delta_0 K a_{i\mu}(t).
-\label{eq:adaptive-field}
+\langle\hat L\rangle
+\sim \langle m^{2(D+1)}\rangle
+-2\langle\delta\rangle\langle m^{D+1}\rangle.
+\label{eq:loss}
 \end{equation}
-The factor $K$ makes $a_{i\mu}=1/K$ recover the homogeneous field $\delta_0$, while a frozen nonuniform allocation recovers a quenched heterogeneous field. Equation~\eqref{eq:adaptive-field} is the minimal linear closure connecting the microscopic budget allocation to the effective learning field.
-
-For the first nonlinear case $D=1$, the fast dynamics becomes
-\begin{equation}
-\dot m_{i\mu}
-=
--m_{i\mu}^{3}
-+
-\delta_0 K a_{i\mu}m_{i\mu}
--
-\gamma m_{i\mu}
-+
-\frac{\sigma}{N}
-\sum_jq_{ij}
-\left(m_{j\mu}-m_{i\mu}\right).
-\label{eq:fast}
-\end{equation}
-Equation~\eqref{eq:fast} retains the local Ginzburg--Landau dynamics and diffusive coupling of Ref.~\cite{arola2024}; only the field driving local learning has become dynamical.
-
-Within the separated-direction closure, the softmax relation gives a simplex-preserving slow dynamics. We take the adaptive strategy to respond slowly to the component fitness according to $\dot g_{i\mu}=\varepsilon T F_{i\mu}$. Differentiating Eq.~\eqref{eq:softmax} then gives the replicator term exactly. Adding weak symmetric exploration at rate $\nu$ yields
-\begin{align}
-\dot a_{i\mu}
-&=
-\varepsilon a_{i\mu}
-\left(
-F_{i\mu}
--
-\sum_\rho a_{i\rho}F_{i\rho}
-\right)
-+
-\varepsilon\nu
-\left(
-\frac{1}{K}-a_{i\mu}
-\right),
-\label{eq:slow}\\
-F_{i\mu}
-&=
-\frac{1}{2}(1-\bar m_{-i,\mu})^2
--
-\frac{1}{2}(1-\bar m_\mu)^2,
-\qquad
-\bar m_\mu=\frac{1}{N}\sum_i m_{i\mu},
-\label{eq:fitness}
-\end{align}
-with $\bar m_{-i,\mu}=(N-1)^{-1}\sum_{j\neq i}m_{j\mu}$. We choose $F_{i\mu}$ as the marginal collective contribution in direction $\mu$. An allocation is favored when it supplies competence that is poorly represented by the rest of the population.
-
-\subsection{Spontaneous differentiation}
-
-For $0<\delta_0-\gamma<1$, Eqs.~\eqref{eq:fast}--\eqref{eq:slow} have the positive symmetric state
-\begin{equation}
-a_{i\mu}^*=\frac{1}{K},
-\qquad
-m_{i\mu}^*=m^*=\sqrt{\delta_0-\gamma}.
-\label{eq:symmetric}
-\end{equation}
-Consider a nonuniform eigenmode of the interaction Laplacian with eigenvalue $\lambda>0$ and a component perturbation whose sum over $\mu$ vanishes. Linearization gives
-\begin{align}
-\delta\dot m
-&=
--
-\left(
-2m^{*2}
-+
-\frac{\sigma\lambda}{N}
-\right)
-\delta m
-+
-\delta_0 K m^*\,\delta a,
-\label{eq:linear-m}\\
-\delta\dot a
-&=
-\varepsilon
-\left[
-\frac{1-m^*}{K(N-1)}\,\delta m
--
-\nu\,\delta a
-\right].
-\label{eq:linear-a}
-\end{align}
-The trace is negative. The symmetric state loses stability when the determinant changes sign,
-\begin{equation}
-\nu
-<
-\frac{
-\delta_0m^*(1-m^*)
-}{
-(N-1)
-\left(
-2m^{*2}+\sigma\lambda/N
-\right)
-}.
-\label{eq:threshold}
-\end{equation}
-The first nonuniform mode to destabilize is the Fiedler mode $\lambda_2$. For fixed $\nu$,
-\begin{equation}
-\sigma_c
-=
-\frac{N}{\lambda_2}
-\left[
-\frac{
-\delta_0m^*(1-m^*)
-}{
-(N-1)\nu
-}
--
-2m^{*2}
-\right].
-\label{eq:sigmac}
-\end{equation}
-Diffusive coupling therefore stabilizes the homogeneous allocation, whereas weaker exploration allows differentiated learning strategies to persist. The timescale $\varepsilon$ changes the growth rate of the unstable mode but not its threshold.
-
-We measure differentiation in the allocation and phenotype through
-\begin{equation}
-G
-=
-\frac{1}{N}
-\sum_i
-\|\mathbf a_i-\overline{\mathbf a}\|^2,
-\qquad
-S
-=
-\frac{1}{N}
-\sum_i
-\|\mathbf m_i-\overline{\mathbf m}\|^2.
-\label{eq:orders}
-\end{equation}
-Both vanish in the symmetric state.
 
 \begin{figure}[htb!]
 \centering
-\includegraphics[width=0.62\linewidth]{figures/fig3.pdf}
-\caption{
-Spontaneous differentiation in the adaptive effective theory.
-(a) Allocation differentiation $G$ and (b) phenotype specialization $S$ as functions of coupling.
-Markers denote averages over 32 initial conditions and shaded regions one standard deviation.
-Dotted lines show the instability threshold in Eq.~\eqref{eq:sigmac}.
-The numerical dynamics uses $D=1$, $N=10$, $K=3$, $\delta_0=0.35$, $\gamma=0.25$, and $\varepsilon=0.2$.
-}
-\label{fig:adaptive-theory}
+\includegraphics[width=0.88\linewidth]{figures/fig1.pdf}
+\caption{Effective-theory baseline for $D=0,1,2$.
+(a) Mean magnetization and (b) normalized effective loss against coupling.
+Markers are means over realizations, shaded regions show one standard
+deviation, and dash-dotted curves show the adiabatic protocol.}
+\label{fig:theory}
 \end{figure}
 
-The nonlinear dynamics follows the $\nu$-dependent thresholds predicted by Eq.~\eqref{eq:sigmac}. Below the threshold, learners separate into different allocations of the common environment and develop distinct phenotypes. Above it, diffusive coupling restores the symmetric population. The transition therefore arises from adaptive heterogeneity rather than from a prescribed partition of the learning problem.
+In the neural baseline, each learner trains on a private MNIST digit
+class and is evaluated on a common test distribution. The stored neural
+runs use a short, nonadiabatic protocol rather than the full published
+training horizon.
 
-Differentiation alone does not establish a collective advantage. We measure performance by the same collective error used to construct the fitness,
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=0.88\linewidth]{figures/fig2.pdf}
+\caption{Short MNIST baseline averaged over three seeds.
+(a) Mean neural parameter and (b) normalized test loss.
+These runs do not reproduce the full experimental sweep of
+Ref.~\cite{arola2024}.}
+\label{fig:mnist}
+\end{figure}
+
+\section{Weighted microscopic loss}
+
+To study allocation in a common environment, we must start from a
+microscopic loss with sample weights $w_i(x)\geq0$, normalized by
+$\langle w_i\rangle=1$:
 \begin{equation}
-L=\frac12\sum_\mu(1-\bar m_\mu)^2,
-\qquad
-L_0=\frac K2(1-m^*)^2,
-\label{eq:performance}
-\end{equation}
-where $L_0$ is the homogeneous reference. Averaging Eq.~\eqref{eq:fast} over learners removes diffusion and gives
-\begin{equation}
-\dot{\bar m}_\mu
+\mathcal L_i^{w}
 =
--\overline{m_\mu^3}
-+\delta_0K\big[
-\bar a_\mu\bar m_\mu
-+\operatorname{Cov}_i(a_{i\mu},m_{i\mu})
-\big]
--\gamma\bar m_\mu.
-\label{eq:mean-competence}
+\left\langle w_i(x)\,
+\ell\bigl(f(x;\theta_i),y\bigr)\right\rangle
++\gamma\|\theta_i\|^2.
+\label{eq:weighted}
 \end{equation}
-Allocation aligned with competence contributes positively through the covariance, whereas the cubic term penalizes large local amplitudes. Weak coupling can leave directions insufficiently covered, while strong coupling suppresses differentiation. A collective performance benefit is therefore possible at intermediate coupling but is not implied by the instability threshold alone.
+Even for a scalar linear predictor $f(x;u)=ux$ and squared loss,
+\begin{align}
+\frac12\left\langle w_i(x)(ux-y)^2\right\rangle
+&=\frac12 C_i u^2-B_i u+\text{constant},\\
+B_i&=\langle w_i(x)xy\rangle,\qquad
+C_i=\langle w_i(x)x^2\rangle.
+\label{eq:moments}
+\end{align}
+Thus weighting modifies both the input-output correlation and the
+input covariance. The condition $\langle w_i\rangle=1$ does not fix
+$C_i$. Consequently, replacing $\delta_i$ in
+Eq.~\eqref{eq:effective} with an allocation-dependent coefficient is
+not a derived reduction. The weighted deep-linear reduction, including
+its assumptions and layerwise dynamics, remains open.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}
-
 \end{document}

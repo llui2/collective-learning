@@ -6,7 +6,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from style import DEPTH_COLORS, LINESTYLE, MARKER, MARKERSIZE, apply_style, panel_label
+from style import DEPTH_COLORS, MARKERSIZE, apply_style, panel_label
 
 
 apply_style()

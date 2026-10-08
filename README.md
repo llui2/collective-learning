@@ -1,8 +1,8 @@
 # Collective learning
 
-Baseline reproduction of [Arola-Fernández and Lacasa, *Effective theory of collective deep learning*](https://doi.org/10.1103/PhysRevResearch.6.L042040), *Physical Review Research* **6**, L042040 (2024). The retained MNIST results are three **short** nonadiabatic seeds, not the complete published protocol.
+Reproduction of [Arola-Fernández and Lacasa, *Effective theory of collective deep learning*](https://doi.org/10.1103/PhysRevResearch.6.L042040), *Physical Review Research* **6**, L042040 (2024). The tracked MNIST baseline comprises three short nonadiabatic seeds, not the full published training horizon.
 
-## Setup and baseline
+## Setup
 
 Requires Python 3.11+, LaTeX and latexmk:
 
@@ -10,40 +10,46 @@ Requires Python 3.11+, LaTeX and latexmk:
     .venv/bin/python -m pip install -r requirements.txt
     ./build.sh
 
-The build runs deterministic tests, regenerates two baseline figures from tracked data, and compiles `draft/main.pdf`. It never launches training or pushes to GitHub.
+The build checks the code, regenerates two baseline figures from retained data and compiles `draft/main.pdf`. It does not train, pull or push. Recalculate baseline experiments explicitly with `./experiment.sh theory` (expensive) or `DEVICE=cuda ./experiment.sh mnist`. On Minerva, use `./setup-minerva.sh` to install CUDA-compatible PyTorch.
 
-Recalculate baselines explicitly using `./experiment.sh theory` (expensive) or `DEVICE=cuda ./experiment.sh mnist`. Use `./setup-minerva.sh` for the Minerva environment.
-
-## Microscopic allocation experiment
+## Finite-time microscopic experiment
 
     ./experiment.sh microscopic --smoke
     ./experiment.sh microscopic
 
-A finite-time test of learning allocation, without an adaptive effective equation. Four deep-linear networks of width two learn a shared identity mapping on two orthogonal input tasks; each has sufficient capacity for both tasks. Learning effort is normalized and divided as `a[i]` versus `1-a[i]`. The original parameter diffusion couples the learners. The training horizon is deliberately finite.
+This is a controlled test of a possible *transient* specialization advantage. Learners share the deep-linear target $y=x$ on two orthogonal input tasks, and every learner can represent both tasks. There are four coupled networks with independent initial weights, shared across conditions. No adaptive effective equation is assumed.
 
-Four conditions share initial weights and training examples:
+Only the training allocation changes:
 
-- `uniform`: each learner studies both tasks equally.
-- `specialists`: half study only task 1, half only task 2.
-- `frozen`: slightly heterogeneous, fixed allocation.
-- `evolving`: starts identically to `frozen`; one allocation mutation per round is retained only if a same-data counterfactual rollout reduces **mean individual validation loss**.
+- **Uniform** learners divide their local effort equally between tasks.
+- **Specialists** train on exactly one task each (two learners per task).
 
-This last selection rule is a computational assumption, not a model of decentralized adaptation. It consumes additional counterfactual compute. Diversity is *not* explicitly rewarded.
+Both receive identical minibatches, initial weights, SGD step counts and total local loss weight. Parameters interact through the original simultaneous diffusion law. The comparison uses each learner's **mean individual generalization error**, not an averaged ensemble prediction. We also record specialists' errors on the studied and unstudied tasks; the latter checks coupling-mediated transfer against $\sigma=0$.
 
-By default the experiment compares seven coupling values across three paired seeds. `results/microscopic_sweep.json` includes full trajectories; `results/microscopic_sweep_summary.json` retains only compact final outcomes for sharing on GitHub. Both include untouched test results. `results/microscopic_sweep.pdf` shows mean individual test loss and, for fixed specialists, **studied versus unstudied task loss** (mean and standard deviation across seeds). Files are written after each completed run and ignored by Git; initial seed and training budget are matched across conditions.
+The default exploratory scan varies hidden linear layers `D=0,1,2`, initial parameter scales `0.03,0.1,0.3`, coupling `0,0.2,1,3`, and two paired seeds. Every trial records eleven or more logarithmically spaced checkpoints over 400 SGD updates, including $t=0$ and $t=400$. The difference
 
-Override the sweep and budget using, for example,
+    advantage(t) = individual_loss_uniform(t) - individual_loss_specialists(t)
 
-    ./experiment.sh microscopic --couplings 0,0.3,1,2 --seeds 0,1,2,3,4 --rounds 25
+is positive exactly when fixed specialization improves mean individual generalization. The experiment generates one incremental `results/microscopic_timescales.json` containing the full cross-task histories and one two-panel `results/microscopic_timescales.pdf` showing a representative slice (middle depth and initial scale). The plots show mean and standard deviation across seeds; results at other depths/scales remain in JSON.
 
-The primary diagnostic of collective learning is whether a *specialist learner* improves on the task receiving **zero local training weight** when coupling is enabled. Ensemble prediction, allocation diversity and functional diversity are recorded separately; ensemble gains alone do not constitute transferred individual knowledge. A useful specialization effect would additionally have to improve mean individual generalization relative to the uniform and frozen controls. Results are a numerical pilot, not a phase diagram or derived adaptive theory.
+A custom, longer scan can use:
 
-## Files
+    ./experiment.sh microscopic --depths 1,2 --scales 0.03,0.1 --couplings 0,0.3,1,2 --seeds 0,1,2 --steps 800
 
-- `src/collective_learning/core.py`: original coupled SGD with optional weighted local loss.
-- `src/collective_learning/theory.py`: validated effective-theory baseline.
-- `src/collective_learning/mnist.py`: short coupled-MNIST baseline.
-- `src/collective_learning/microscopic.py`: finite-time microscopic allocation sweep.
-- `draft/main.tex`: original theory, baseline figures and the still-open weighted effective reduction.
-- `results/theory_baseline.npz` and `results/mnist_quick_seed*.json`: retained baseline data.
-- `tests/`: deterministic checks of microscopic dynamics and coupling-mediated transfer.
+The JSON and PDF are ignored by Git. To share only this experiment for analysis:
+
+    git add -f results/microscopic_timescales.json
+    git commit -m "Add finite-time specialization scan"
+    git push origin main
+
+This is a diagnostic pilot. The scan is exploratory and can select spurious apparent advantages across many conditions. Finite horizons and deep-linear initialization matter, and task weighting also changes stochastic-gradient variance. **Evolution of allocations remains disabled** until there is a reproducible fixed-specialization advantage. Earlier evolutionary pilots are retained in Git history, not the working experiment.
+
+## Structure
+
+- `src/collective_learning/core.py`: baseline coupled SGD, optional weighted local losses.
+- `src/collective_learning/theory.py`: baseline effective equations.
+- `src/collective_learning/mnist.py`: short neural MNIST reproduction.
+- `src/collective_learning/microscopic.py`: time/depth/initialization/coupling scan.
+- `draft/main.tex`: baseline manuscript and open effective-reduction question.
+- `results/theory_baseline.npz`, `results/mnist_quick_seed*.json`: retained baseline data.
+- `tests/`: deterministic learning, coupling and experiment checks.

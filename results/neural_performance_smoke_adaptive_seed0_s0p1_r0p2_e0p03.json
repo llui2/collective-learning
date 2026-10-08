@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "complete": true,
+  "config": {
+    "control": "adaptive",
+    "sigma": 0.1,
+    "strategy_rate": 0.2,
+    "seed": 0,
+    "steps": 50,
+    "eval_every": 25,
+    "units": 10,
+    "depth": 1,
+    "width": 20,
+    "batch_size": 32,
+    "strategy_every": 25,
+    "temperature": 0.5,
+    "exploration": 0.03,
+    "strategy_noise": 0.02,
+    "fisher_ridge": 0.001,
+    "max_strategy_step": 0.1,
+    "learning_rate": 0.005,
+    "weight_decay": 0.001,
+    "representation_dim": 8,
+    "representation_seed": 13,
+    "representation_samples": 500,
+    "probe_samples": 64,
+    "validation_samples": 128,
+    "split_seed": 23,
+    "device": "cuda",
+    "output": "results/neural_performance_smoke_adaptive_seed0_s0p1_r0p2_e0p03.json"
+  },
+  "n_training": 59808,
+  "n_probe": 64,
+  "n_validation": 128,
+  "budget_error": 1.1920928955078125e-07,
+  "validation": [
+    {
+      "R": 0.010165676474571228,
+      "S_sample": 1.474514954580286e-17,
+      "routing_entropy": 0.9987791776657104,
+      "ensemble_accuracy": 0.078125,
+      "ensemble_nll": 2.3652656078338623,
+      "collective_loss": 0.409380704164505,
+      "individual_accuracy": 0.078125,
+      "individual_nll": 2.3652656078338623,
+      "step": 0
+    },
+    {
+      "R": 0.010045955888926983,
+      "S_sample": 3.7965074284329603e-07,
+      "routing_entropy": 0.9987936019897461,
+      "ensemble_accuracy": 0.09375,
+      "ensemble_nll": 2.3403029441833496,
+      "collective_loss": 0.40740856528282166,
+      "individual_accuracy": 0.09375,
+      "individual_nll": 2.340322494506836,
+      "step": 25
+    },
+    {
+      "R": 0.009929138235747814,
+      "S_sample": 1.4261603382692556e-06,
+      "routing_entropy": 0.9988077282905579,
+      "ensemble_accuracy": 0.0859375,
+      "ensemble_nll": 2.3201346397399902,
+      "collective_loss": 0.405702143907547,
+      "individual_accuracy": 0.08671875298023224,
+      "individual_nll": 2.320204257965088,
+      "step": 50
+    }
+  ],
+  "test_final": {
+    "ensemble_accuracy": 0.1555,
+    "ensemble_nll": 2.2859204956054686,
+    "collective_loss": 0.4025138671875,
+    "individual_accuracy": 0.155,
+    "individual_nll": 2.2859904296875
+  }
+}

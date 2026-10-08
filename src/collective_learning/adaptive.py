@@ -10,6 +10,7 @@ import argparse
 import copy
 import json
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import get_context
 from contextlib import nullcontext
 from pathlib import Path
 
@@ -269,7 +270,7 @@ def run(args):
     print(f"Adaptive allocation: {len(jobs)} trials", flush=True)
     completed = []
     pool = (
-        ProcessPoolExecutor(max_workers=args.jobs)
+        ProcessPoolExecutor(max_workers=args.jobs, mp_context=get_context("spawn"))
         if args.jobs > 1 else nullcontext()
     )
     with pool as executor:

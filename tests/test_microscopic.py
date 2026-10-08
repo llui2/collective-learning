@@ -107,6 +107,11 @@ class MicroscopicTests(unittest.TestCase):
                     Path(args.output).with_name("parallel_summary.json").read_text()
                 )["trials"]), 2
             )
+            serial_args = Namespace(
+                **{**vars(args), "jobs": 1,
+                   "output": str(Path(directory) / "serial.json")}
+            )
+            self.assertEqual(trials, run(serial_args))
 
     def test_first_passage_censors_nonlearners(self):
         history = [

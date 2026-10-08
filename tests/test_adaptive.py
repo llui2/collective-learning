@@ -89,6 +89,11 @@ class AdaptiveTests(unittest.TestCase):
             self.assertTrue(
                 json.loads(Path(tmp, "parallel_summary.json").read_text())["complete"]
             )
+            serial_args = Namespace(
+                **{**vars(args), "jobs": 1,
+                   "output": str(Path(tmp) / "serial.json")}
+            )
+            self.assertEqual(result, run(serial_args))
 
     def test_summary_is_compact_and_excludes_cross_task_matrix(self):
         args = self.args()

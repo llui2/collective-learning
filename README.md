@@ -30,7 +30,7 @@ Four conditions share initial weights and training examples:
 
 This last selection rule is a computational assumption, not a model of decentralized adaptation. It consumes additional counterfactual compute. Diversity is *not* explicitly rewarded.
 
-By default the experiment compares seven coupling values across three paired seeds. `results/microscopic_sweep.json` includes the complete histories and unseen test results for every learner and task. `results/microscopic_sweep.pdf` shows mean individual test loss and, for fixed specialists, **studied versus unstudied task loss** (mean and standard deviation across seeds). Files are written after each completed run and ignored by Git; initial seed and training budget are matched across conditions.
+By default the experiment compares seven coupling values across three paired seeds. `results/microscopic_sweep.json` includes full trajectories; `results/microscopic_sweep_summary.json` retains only compact final outcomes for sharing on GitHub. Both include untouched test results. `results/microscopic_sweep.pdf` shows mean individual test loss and, for fixed specialists, **studied versus unstudied task loss** (mean and standard deviation across seeds). Files are written after each completed run and ignored by Git; initial seed and training budget are matched across conditions.
 
 Override the sweep and budget using, for example,
 

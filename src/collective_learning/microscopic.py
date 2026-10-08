@@ -245,8 +245,32 @@ def run(args):
 
     args.device = torch.device(args.device)
     output = Path(args.output)
+    summary_path = output.with_name(output.stem + "_summary.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     trials = []
+
+    def save(complete):
+        config = dict(vars(args), device=str(args.device))
+        config.pop("coupling", None)  # The sweep contains several values.
+        output.write_text(json.dumps(
+            {"config": config, "complete": complete, "trials": trials}, indent=2
+        ))
+        summary_path.write_text(json.dumps({
+            "config": config,
+            "complete": complete,
+            "trials": [
+                {
+                    "seed": t["seed"], "coupling": t["coupling"],
+                    "accepted_mutations": t["accepted_mutations"],
+                    "test": {
+                        name: {key: value for key, value in t["test"][name].items()
+                               if key != "cross_loss"}
+                        for name in ("uniform", "specialists", "frozen", "evolving")
+                    },
+                }
+                for t in trials
+            ],
+        }, indent=2))
     for seed in seeds:
         for coupling in couplings:
             result = trial(args, seed, coupling)
@@ -261,16 +285,11 @@ def run(args):
                 f"accepted={result['accepted_mutations']}/{args.rounds}",
                 flush=True,
             )
-            config = dict(vars(args), device=str(args.device))
-            output.write_text(json.dumps(
-                {"config": config, "complete": False, "trials": trials}, indent=2
-            ))
+            save(complete=False)
 
-    output.write_text(json.dumps(
-        {"config": config, "complete": True, "trials": trials}, indent=2
-    ))
+    save(complete=True)
     figure(trials, output.with_suffix(".pdf"))
-    print(f"Saved {output} and {output.with_suffix('.pdf')}")
+    print(f"Saved {output}, {summary_path} and {output.with_suffix('.pdf')}")
     return trials
 
 

@@ -74,6 +74,9 @@ class MicroscopicTests(unittest.TestCase):
             self.assertEqual(np.shape(trials[0]["test"]["evolving"]["cross_loss"]), (4, 2))
             self.assertTrue(np.isfinite(trials[1]["test"]["uniform"]["individual_loss"]))
             self.assertTrue(Path(args.output).with_suffix(".pdf").exists())
+            self.assertTrue(
+                Path(args.output).with_name("pilot_summary.json").exists()
+            )
 
 
 if __name__ == "__main__":

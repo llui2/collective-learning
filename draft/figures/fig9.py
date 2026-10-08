@@ -84,7 +84,7 @@ ax[0].legend(
 )
 panel_label(ax[0], "(a)")
 panel_label(ax[1], "(b)")
-fig.subplots_adjust(left=0.18, right=0.98, bottom=0.11, top=0.91, hspace=0.25)
+fig.subplots_adjust(left=0.18, right=0.98, bottom=0.11, top=0.84, hspace=0.25)
 fig.savefig(OUT, bbox_inches="tight")
 plt.close(fig)
 print(f"fig9: {len(rates)} rates, {steps} SGD steps")

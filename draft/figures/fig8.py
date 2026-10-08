@@ -1,4 +1,4 @@
-"""Neural collective-performance benefit relative to matched uniform learning."""
+"""Neural collective-loss and accuracy gains relative to matched uniform learning."""
 
 import json
 from collections import defaultdict
@@ -46,7 +46,7 @@ for item in data:
     sigma = float(cfg["sigma"])
     points[(rate, float(cfg["exploration"]), sigma)].append((
         uniform["collective_loss"] - adaptive["collective_loss"],
-        uniform["ensemble_nll"] - adaptive["ensemble_nll"],
+        100.0 * (adaptive["ensemble_accuracy"] - uniform["ensemble_accuracy"]),
     ))
 
 if not points:
@@ -94,7 +94,7 @@ for a in ax:
     a.grid(False)
 
 ax[0].set_ylabel(r"$L_{\mathrm{uniform}}-L_{\mathrm{adaptive}}$")
-ax[1].set_ylabel(r"$\mathrm{CE}_{\mathrm{uniform}}-\mathrm{CE}_{\mathrm{adaptive}}$")
+ax[1].set_ylabel(r"$A_{\mathrm{adaptive}}-A_{\mathrm{uniform}}$ (pp)")
 ax[1].set_xlabel(r"$\log_{10}\sigma$")
 ax[0].legend(
     loc="lower center", bbox_to_anchor=(0.5, 1.02),
@@ -103,7 +103,7 @@ ax[0].legend(
 )
 panel_label(ax[0], "(a)")
 panel_label(ax[1], "(b)")
-fig.subplots_adjust(left=0.26, right=0.98, bottom=0.11, top=0.91, hspace=0.26)
+fig.subplots_adjust(left=0.26, right=0.98, bottom=0.11, top=0.84, hspace=0.26)
 fig.savefig(OUT, bbox_inches="tight")
 plt.close(fig)
 print(f"fig8: {len(rates)} adaptation rates, {steps} SGD steps, validation results")

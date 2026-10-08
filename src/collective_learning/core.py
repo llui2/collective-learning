@@ -48,6 +48,7 @@ def coupled_sgd_step(
     weight_decay,
     adjacency=None,
     sample_weights=None,
+    loss_fn=None,
 ):
     """Apply one local SGD step followed by simultaneous diffusive coupling.
 
@@ -57,6 +58,9 @@ def coupled_sgd_step(
 
     sample_weights optionally reweights examples within each learner's batch.
     Its default None exactly recovers the baseline dynamics.
+
+    loss_fn returns a vector of per-sample losses. Its default is
+    cross-entropy; passing a squared loss permits deep-linear regression.
     """
     n = len(ensemble)
     if len(batches) != n:
@@ -76,7 +80,13 @@ def coupled_sgd_step(
         model.train()
         model.zero_grad(set_to_none=True)
 
-        per_sample = F.cross_entropy(model(x), y, reduction="none")
+        prediction = model(x)
+        if loss_fn is None:
+            per_sample = F.cross_entropy(prediction, y, reduction="none")
+        else:
+            per_sample = loss_fn(prediction, y)
+        if per_sample.ndim != 1 or per_sample.numel() != len(y):
+            raise ValueError("loss_fn must return one loss per sample")
         if sample_weights is None or sample_weights[i] is None:
             loss = per_sample.mean()
         else:

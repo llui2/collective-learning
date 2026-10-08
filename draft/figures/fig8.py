@@ -44,7 +44,7 @@ for item in data:
     adaptive = item["validation"][-1]
     rate = float(cfg["strategy_rate"])
     sigma = float(cfg["sigma"])
-    points[(rate, sigma)].append((
+    points[(rate, float(cfg["exploration"]), sigma)].append((
         uniform["collective_loss"] - adaptive["collective_loss"],
         uniform["ensemble_nll"] - adaptive["ensemble_nll"],
     ))
@@ -53,28 +53,34 @@ if not points:
     OUT.unlink(missing_ok=True)
     raise SystemExit(0)
 
-rates = sorted({k[0] for k in points})
+conditions = sorted({(k[0], k[1]) for k in points})
+rates = sorted({r for r, _ in conditions})
+explorations = sorted({e for _, e in conditions})
 fig, ax = plt.subplots(2, 1, figsize=(3.8, 4.7), sharex=True)
 
-for k, rate in enumerate(rates):
-    sigmas = sorted(sigma for r, sigma in points if r == rate)
+for rate, exploration in conditions:
+    sigmas = sorted(sigma for r, e, sigma in points if r == rate and e == exploration)
     x = np.log10(sigmas)
     values = np.array([
-        np.asarray(points[(rate, sigma)]).mean(axis=0)
+        np.asarray(points[(rate, exploration, sigma)]).mean(axis=0)
         for sigma in sigmas
     ])
     deviations = np.array([
         np.asarray(points[(rate, sigma)]).std(axis=0)
         for sigma in sigmas
     ])
+    k = rates.index(rate)
     color = DEPTH_COLORS[k % len(DEPTH_COLORS)]
     marker = DEPTH_MARKERS[k % len(DEPTH_MARKERS)]
+    linestyle = "-" if exploration == explorations[0] else "--"
 
     for j in range(2):
         ax[j].plot(
             x, values[:, j], color=color, marker=marker,
-            linewidth=1.0, markersize=0.82 * MARKERSIZE,
-            label=fr"$r={rate:g}$" if j == 0 else None,
+            linewidth=1.0, linestyle=linestyle,
+            markersize=0.82 * MARKERSIZE,
+            label=fr"$r={rate:g},,
+u={exploration:g}$" if j == 0 else None,
         )
         if any(len(points[(rate, sigma)]) > 1 for sigma in sigmas):
             ax[j].fill_between(
@@ -93,7 +99,7 @@ ax[1].set_ylabel(r"$\mathrm{CE}_{\mathrm{uniform}}-\mathrm{CE}_{\mathrm{adaptive
 ax[1].set_xlabel(r"$\log_{10}\sigma$")
 ax[0].legend(
     loc="lower center", bbox_to_anchor=(0.5, 1.02),
-    ncol=len(rates), frameon=False, columnspacing=0.8,
+    ncol=len(rates), frameon=False, columnspacing=0.6,
     handletextpad=0.3,
 )
 panel_label(ax[0], "(a)")

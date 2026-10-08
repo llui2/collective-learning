@@ -1,8 +1,9 @@
-"""Two-task deep-linear learners with evolving microscopic learning allocation.
+"""Finite-time collective learning with evolving task allocations.
 
-Strategies compete by their effect on future ensemble validation error.
-The rank-one bottleneck cannot represent the rank-two identity teacher.
-No differentiation reward, effective closure, or presumed gain is imposed.
+Each deep-linear learner has enough width to learn both independent tasks.
+Training effort is finite, and coupling is parameter diffusion as in the
+original neural baseline. Evolution selects on mean individual validation
+loss; ensemble prediction is reported only as a separate diagnostic.
 """
 
 import argparse
@@ -23,211 +24,273 @@ def squared_loss(prediction, target):
 
 
 def task_data(samples, generator, device):
-    """Two orthogonal classes for the rank-two teacher y=(x[0], x[1])."""
+    """Two orthogonal input classes, with common teacher y=x."""
     z = torch.randn((2, samples), generator=generator)
     x = torch.zeros((2, samples, 2))
-    x[0, :, 0] = z[0]
-    x[1, :, 1] = z[1]
+    x[0, :, 0], x[1, :, 1] = z[0], z[1]
     return [(x[k].to(device), x[k].to(device)) for k in range(2)]
 
 
-def training_stream(steps, batch_size, generator, device):
-    z = torch.randn((steps, 2, batch_size), generator=generator)
-    x = torch.zeros((steps, 2, batch_size, 2))
-    x[:, 0, :, 0] = z[:, 0]
-    x[:, 1, :, 1] = z[:, 1]
-    return [
-        (x[t].reshape(2 * batch_size, 2).to(device),
-         x[t].reshape(2 * batch_size, 2).to(device))
-        for t in range(steps)
-    ]
+def training_stream(steps, batch, generator, device):
+    """Shared examples make the allocation/coupling comparisons paired."""
+    z = torch.randn((steps, 2, batch), generator=generator)
+    x = torch.zeros((steps, 2, batch, 2))
+    x[:, 0, :, 0], x[:, 1, :, 1] = z[:, 0], z[:, 1]
+    return [(x[t].reshape(-1, 2).to(device), x[t].reshape(-1, 2).to(device))
+            for t in range(steps)]
 
 
-def allocation_weights(a, batch_size, device):
-    """Each learner has total batch weight 2*batch_size, independent of a."""
+def allocation_weights(a, batch, device):
+    """Mean sample weight is one for every learner, for any allocation."""
     return [
-        torch.cat((
-            torch.full((batch_size,), 2 * float(p), device=device),
-            torch.full((batch_size,), 2 * (1 - float(p)), device=device),
-        ))
+        torch.cat((torch.full((batch,), 2 * float(p), device=device),
+                   torch.full((batch,), 2 * (1 - float(p)), device=device)))
         for p in a
     ]
 
 
-def advance(models, a, stream, args):
-    weights = allocation_weights(a, args.batch, next(models[0].parameters()).device)
+def advance(models, allocations, stream, args):
+    weights = allocation_weights(
+        allocations, args.batch, next(models[0].parameters()).device
+    )
     for batch in stream:
         coupled_sgd_step(
-            models, [batch] * len(models),
-            learning_rate=args.rate, coupling=args.coupling,
-            weight_decay=args.decay, sample_weights=weights,
-            loss_fn=squared_loss,
+            models, [batch] * len(models), learning_rate=args.rate,
+            coupling=args.coupling, weight_decay=args.decay,
+            sample_weights=weights, loss_fn=squared_loss,
         )
     return models
 
 
 @torch.no_grad()
 def cross_loss(models, data):
-    """One row per learner and one column per task, as in Arola--Lacasa."""
-    return np.array([
-        [float(squared_loss(model(x), y).mean()) for x, y in data]
+    return np.asarray([
+        [squared_loss(model(x), y).mean().item() for x, y in data]
         for model in models
     ])
 
 
 @torch.no_grad()
-def ensemble_loss(models, data):
-    """Loss of the mean prediction, distinct from mean individual loss."""
-    return float(np.mean([
-        float(squared_loss(
-            torch.stack([model(x) for model in models]).mean(dim=0), y
-        ).mean())
-        for x, y in data
-    ]))
+def ensemble_metrics(models, data):
+    ensemble_errors = []
+    functional_variances = []
+    for x, y in data:
+        outputs = torch.stack([model(x) for model in models])
+        mean = outputs.mean(dim=0)
+        ensemble_errors.append(squared_loss(mean, y).mean().item())
+        functional_variances.append(
+            (outputs - mean).square().sum(dim=-1).mean().item()
+        )
+    return float(np.mean(ensemble_errors)), float(np.mean(functional_variances))
 
 
-def record(round_idx, models, allocations, data):
-    entry = {"round": round_idx}
-    for name in models:
-        a = allocations[name]
-        matrix = cross_loss(models[name], data)
-        entry[name] = {
-            "individual_loss": float(matrix.mean()),
-            "ensemble_loss": ensemble_loss(models[name], data),
-            "cross_loss": matrix.tolist(),
-            "a": a.tolist(),
-            "diversity": float(2 * np.var(a)),
+def measure(models, allocations, data, specialized=False):
+    errors = cross_loss(models, data)
+    ensemble, function_diversity = ensemble_metrics(models, data)
+    result = {
+        "individual_loss": float(errors.mean()),
+        "cross_loss": errors.tolist(),
+        "ensemble_loss": ensemble,
+        "allocation_diversity": float(np.var(allocations)),
+        "functional_diversity": function_diversity,
+        "allocations": allocations.tolist(),
+    }
+    if specialized:
+        private = [0 if a == 1 else 1 for a in allocations]
+        result["own_task_loss"] = float(np.mean(
+            [errors[i, private[i]] for i in range(len(models))]
+        ))
+        result["off_task_loss"] = float(np.mean(
+            [errors[i, 1 - private[i]] for i in range(len(models))]
+        ))
+    return result
+
+
+def population_loss(models, data):
+    """Selection objective: population-mean individual validation loss."""
+    return float(cross_loss(models, data).mean())
+
+
+def trial(args, seed, coupling):
+    # The identical initialization and streams are reused across conditions.
+    torch.manual_seed(seed)
+    rng = np.random.default_rng(seed)
+    batches = torch.Generator().manual_seed(seed + 100)
+    validation = task_data(
+        args.evaluation, torch.Generator().manual_seed(seed + 200), args.device
+    )
+    test = task_data(
+        args.evaluation, torch.Generator().manual_seed(seed + 300), args.device
+    )
+    initial = [
+        nn.Sequential(
+            nn.Linear(2, args.width, bias=False),
+            nn.Linear(args.width, 2, bias=False),
+        ).to(args.device)
+        for _ in range(args.units)
+    ]
+    a0 = np.clip(0.5 + 0.03 * rng.standard_normal(args.units), 0.0, 1.0)
+    allocations = {
+        "uniform": np.full(args.units, 0.5),
+        "specialists": np.array([float(i % 2) for i in range(args.units)]),
+        "frozen": a0.copy(),
+        "evolving": a0.copy(),
+    }
+    models = {name: copy.deepcopy(initial) for name in allocations}
+    args.coupling = float(coupling)
+
+    def snapshot(round_idx, data):
+        return {
+            "round": round_idx,
+            **{
+                name: measure(
+                    models[name], allocations[name], data,
+                    specialized=(name == "specialists")
+                )
+                for name in models
+            },
         }
-    return entry
 
+    history = [snapshot(0, validation)]
+    accepted = 0
+    for k in range(1, args.rounds + 1):
+        stream = training_stream(args.window, args.batch, batches, args.device)
+        for name in ("uniform", "specialists", "frozen"):
+            advance(models[name], allocations[name], stream, args)
 
-def figure(history, out):
-    t = [entry["round"] for entry in history]
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.8))
-    for name in ("uniform", "frozen", "evolving"):
-        line, = axes[0].plot(
-            t, [entry[name]["ensemble_loss"] for entry in history], label=name
+        current = allocations["evolving"]
+        candidate = current.copy()
+        idx = int(rng.integers(args.units))
+        candidate[idx] = np.clip(
+            candidate[idx] + rng.normal(0, args.mutation), 0.0, 1.0
         )
-        axes[0].plot(
-            t, [entry[name]["individual_loss"] for entry in history],
-            color=line.get_color(), linestyle=":", linewidth=1.0
-        )
-    axes[0].set_xlabel("Selection rounds")
-    axes[0].set_ylabel("Validation loss")
-    axes[0].set_title("Solid: ensemble; dotted: individual", fontsize=8)
-    axes[0].legend(frameon=False)
+        base = advance(copy.deepcopy(models["evolving"]), current, stream, args)
+        proposed = advance(copy.deepcopy(models["evolving"]), candidate, stream, args)
+        # Both counterfactuals start from the same weights and see the same data.
+        if population_loss(proposed, validation) < population_loss(base, validation) - 1e-10:
+            allocations["evolving"] = candidate
+            models["evolving"] = proposed
+            accepted += 1
+        else:
+            models["evolving"] = base
+        history.append(snapshot(k, validation))
 
-    allocations = np.array([entry["evolving"]["a"] for entry in history])
-    for i in range(allocations.shape[1]):
-        axes[1].plot(t, allocations[:, i], label=fr"$i={i+1}$")
-    axes[1].axhline(0.5, color="0.6", linewidth=0.8, linestyle=":")
-    axes[1].set_ylim(0, 1)
-    axes[1].set_xlabel("Selection rounds")
-    axes[1].set_ylabel(r"Task-1 allocation $a_i$")
-    axes[1].legend(frameon=False, ncol=2, fontsize=8)
+    return {
+        "seed": int(seed),
+        "coupling": float(coupling),
+        "accepted_mutations": accepted,
+        "history": history,
+        "test": snapshot(args.rounds, test),
+    }
+
+
+def figure(trials, path):
+    couplings = sorted(set(t["coupling"] for t in trials))
+    fig, axes = plt.subplots(2, 1, figsize=(5.5, 5.5), sharex=True)
+    strategies = ("uniform", "specialists", "frozen", "evolving")
+    for name in strategies:
+        groups = [[t["test"][name]["individual_loss"] for t in trials
+                   if t["coupling"] == s] for s in couplings]
+        mean = np.array([np.mean(v) for v in groups])
+        std = np.array([np.std(v) for v in groups])
+        line, = axes[0].plot(couplings, mean, marker="o", label=name)
+        axes[0].fill_between(
+            couplings, np.maximum(mean - std, 0), mean + std,
+            alpha=0.15, color=line.get_color()
+        )
+    axes[0].set_ylabel("Mean individual test loss")
+    axes[0].legend(frameon=False, ncol=2, fontsize=8)
+
+    for key, label, style in (
+        ("own_task_loss", "studied task", "-"),
+        ("off_task_loss", "unstudied task", "--"),
+    ):
+        groups = [[t["test"]["specialists"][key] for t in trials
+                   if t["coupling"] == s] for s in couplings]
+        mean = np.array([np.mean(v) for v in groups])
+        std = np.array([np.std(v) for v in groups])
+        line, = axes[1].plot(
+            couplings, mean, linestyle=style, marker="o", label=label
+        )
+        axes[1].fill_between(
+            couplings, np.maximum(mean - std, 0), mean + std,
+            alpha=0.15, color=line.get_color()
+        )
+    axes[1].set_xlabel(r"Parameter coupling $\sigma$")
+    axes[1].set_ylabel("Fixed specialists: test loss")
+    axes[1].legend(frameon=False, fontsize=8)
     fig.tight_layout()
-    fig.savefig(out)
+    fig.savefig(path)
     plt.close(fig)
 
 
 def run(args):
-    if args.units < 2 or args.width < 1 or args.batch < 1 or args.window < 1:
-        raise ValueError("units >= 2, width, batch and window must be positive")
-    if args.rounds < 1 or args.rate <= 0 or args.mutation < 0 or args.coupling < 0:
-        raise ValueError("rounds and rate must be positive; coupling and mutation nonnegative")
-
     if args.smoke:
-        args.rounds, args.window, args.batch = 2, 2, 8
-        args.evaluation = 32
-        if args.output == "results/microscopic.json":
+        args.couplings, args.seeds = "0,0.6", "0"
+        args.rounds, args.window, args.batch, args.evaluation = 2, 2, 8, 24
+        if args.output == "results/microscopic_sweep.json":
             args.output = "results/microscopic_smoke.json"
 
-    device = torch.device(args.device)
-    torch.manual_seed(args.seed)
-    rng = np.random.default_rng(args.seed)
-    batches = torch.Generator().manual_seed(args.seed + 100)
-    validation = task_data(args.evaluation, torch.Generator().manual_seed(args.seed + 200), device)
-    test = task_data(args.evaluation, torch.Generator().manual_seed(args.seed + 300), device)
+    couplings = [float(x) for x in args.couplings.split(",")]
+    seeds = [int(x) for x in args.seeds.split(",")]
+    if (not couplings or not seeds or len(set(couplings)) != len(couplings)
+            or len(set(seeds)) != len(seeds)
+            or any(not np.isfinite(s) or s < 0 for s in couplings)):
+        raise ValueError("Couplings must be distinct, finite and nonnegative; seeds distinct")
+    if (args.units < 2 or args.units % 2 or args.width < 2
+            or args.rounds < 1 or args.window < 1 or args.batch < 1
+            or args.evaluation < 1 or args.rate <= 0 or args.decay < 0
+            or args.mutation < 0):
+        raise ValueError("Need even units >= 2, width >= 2, positive budget/rate")
 
-    initial_models = [
-        nn.Sequential(
-            nn.Linear(2, args.width, bias=False),
-            nn.Linear(args.width, 2, bias=False),
-        ).to(device)
-        for _ in range(args.units)
-    ]
-    initial_a = np.clip(0.5 + 0.03 * rng.standard_normal(args.units), 0.05, 0.95)
-    allocations = {
-        "uniform": np.full(args.units, 0.5),
-        "frozen": initial_a.copy(),
-        "evolving": initial_a.copy(),
-    }
-    models = {name: copy.deepcopy(initial_models) for name in allocations}
-    history = [record(0, models, allocations, validation)]
-    accepted = 0
+    args.device = torch.device(args.device)
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    trials = []
+    for seed in seeds:
+        for coupling in couplings:
+            result = trial(args, seed, coupling)
+            trials.append(result)
+            tested = result["test"]
+            print(
+                f"seed={seed} sigma={coupling:g} "
+                f"uniform={tested['uniform']['individual_loss']:.4f} "
+                f"specialists={tested['specialists']['individual_loss']:.4f} "
+                f"evolving={tested['evolving']['individual_loss']:.4f} "
+                f"unstudied={tested['specialists']['off_task_loss']:.4f} "
+                f"accepted={result['accepted_mutations']}/{args.rounds}",
+                flush=True,
+            )
+            config = dict(vars(args), device=str(args.device))
+            output.write_text(json.dumps(
+                {"config": config, "complete": False, "trials": trials}, indent=2
+            ))
 
-    for round_idx in range(1, args.rounds + 1):
-        stream = training_stream(args.window, args.batch, batches, device)
-        for name in ("uniform", "frozen"):
-            advance(models[name], allocations[name], stream, args)
-
-        a = allocations["evolving"]
-        proposal = a.copy()
-        i = int(rng.integers(args.units))
-        proposal[i] = np.clip(proposal[i] + rng.normal(0, args.mutation), 0.02, 0.98)
-
-        unchanged = advance(copy.deepcopy(models["evolving"]), a, stream, args)
-        mutated = advance(copy.deepcopy(models["evolving"]), proposal, stream, args)
-        if ensemble_loss(mutated, validation) < ensemble_loss(unchanged, validation) - 1e-10:
-            models["evolving"] = mutated
-            allocations["evolving"] = proposal
-            accepted += 1
-        else:
-            models["evolving"] = unchanged
-
-        history.append(record(round_idx, models, allocations, validation))
-
-    result = {
-        "config": vars(args),
-        "accepted_mutations": accepted,
-        "history": history,
-        "test": record(args.rounds, models, allocations, test),
-    }
-    path = Path(args.output)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(result, indent=2))
-    figure(history, path.with_suffix(".pdf"))
-
-    print(f"Accepted mutations: {accepted}/{args.rounds}")
-    for name in allocations:
-        summary = result["test"][name]
-        print(
-            f"{name:8s} individual_loss={summary['individual_loss']:.5f} "
-            f"ensemble_loss={summary['ensemble_loss']:.5f} "
-            f"diversity={summary['diversity']:.5f} "
-            f"allocations={np.round(allocations[name], 3).tolist()}"
-        )
-    print(f"Saved {path} and {path.with_suffix('.pdf')}")
-    return result
+    output.write_text(json.dumps(
+        {"config": config, "complete": True, "trials": trials}, indent=2
+    ))
+    figure(trials, output.with_suffix(".pdf"))
+    print(f"Saved {output} and {output.with_suffix('.pdf')}")
+    return trials
 
 
 def parse_args():
-    p = argparse.ArgumentParser()
-    p.add_argument("--coupling", type=float, default=0.03)
-    p.add_argument("--rounds", type=int, default=60)
-    p.add_argument("--window", type=int, default=20, help="SGD steps per selection round")
-    p.add_argument("--units", type=int, default=4)
-    p.add_argument("--width", type=int, default=1, help="rank-one bottleneck")
-    p.add_argument("--batch", type=int, default=32, help="examples per task per SGD step")
-    p.add_argument("--rate", type=float, default=0.08, help="SGD learning rate")
-    p.add_argument("--decay", type=float, default=0.001)
-    p.add_argument("--mutation", type=float, default=0.15)
-    p.add_argument("--evaluation", type=int, default=512, help="examples per task")
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--device", default="cpu")
-    p.add_argument("--output", default="results/microscopic.json")
-    p.add_argument("--smoke", action="store_true")
-    return p.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--couplings", default="0,0.1,0.3,0.6,1,2,4")
+    parser.add_argument("--seeds", default="0,1,2")
+    parser.add_argument("--rounds", type=int, default=20)
+    parser.add_argument("--window", type=int, default=10)
+    parser.add_argument("--units", type=int, default=4)
+    parser.add_argument("--width", type=int, default=2)
+    parser.add_argument("--batch", type=int, default=32)
+    parser.add_argument("--rate", type=float, default=0.04)
+    parser.add_argument("--decay", type=float, default=0.01)
+    parser.add_argument("--mutation", type=float, default=0.15)
+    parser.add_argument("--evaluation", type=int, default=256)
+    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--output", default="results/microscopic_sweep.json")
+    parser.add_argument("--smoke", action="store_true")
+    return parser.parse_args()
 
 
 if __name__ == "__main__":

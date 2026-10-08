@@ -69,7 +69,7 @@ class MicroscopicTests(unittest.TestCase):
                 depths="0,1", scales="0.1", couplings="0,0.6",
                 seeds="0", steps=6, units=4, width=2, batch=4,
                 rate=0.05, decay=0.001, evaluation=16, device="cpu",
-                output=str(path), smoke=True,
+                output=str(path), smoke=True, jobs=1,
             )
             result = run(args)
             self.assertEqual(len(result), 4)
@@ -79,6 +79,20 @@ class MicroscopicTests(unittest.TestCase):
             saved = json.loads(path.read_text())
             self.assertTrue(saved["complete"])
             self.assertEqual(len(saved["trials"]), 4)
+
+    def test_parallel_run_is_reproducible(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = Namespace(
+                depths="1", scales="0.1", couplings="0,0.6",
+                seeds="0", steps=4, units=4, width=2, batch=4,
+                rate=0.05, decay=0.001, evaluation=8, device="cpu",
+                jobs=2, output=str(Path(directory) / "parallel.json"),
+                smoke=False,
+            )
+            trials = run(args)
+            self.assertEqual(len(trials), 2)
+            self.assertEqual(trials[0]["history"][0]["advantage"], 0)
+            self.assertTrue(Path(args.output).with_suffix(".pdf").exists())
 
 
 if __name__ == "__main__":

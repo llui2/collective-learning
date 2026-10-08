@@ -15,7 +15,7 @@ The build checks the code, regenerates two baseline figures from retained data a
 ## Finite-time microscopic experiment
 
     ./experiment.sh microscopic --smoke
-    ./experiment.sh microscopic
+    ./experiment.sh microscopic --jobs 12
 
 This is a controlled test of a possible *transient* specialization advantage. Learners share the deep-linear target $y=x$ on two orthogonal input tasks, and every learner can represent both tasks. There are four coupled networks with independent initial weights, shared across conditions. No adaptive effective equation is assumed.
 
@@ -32,9 +32,9 @@ The default exploratory scan varies hidden linear layers `D=0,1,2`, initial para
 
 is positive exactly when fixed specialization improves mean individual generalization. The experiment generates one incremental `results/microscopic_timescales.json` containing the full cross-task histories and one two-panel `results/microscopic_timescales.pdf` showing a representative slice (middle depth and initial scale). The plots show mean and standard deviation across seeds; results at other depths/scales remain in JSON.
 
-A custom, longer scan can use:
+Independent trials can use parallel CPU workers on Minerva with `--jobs 12` (a single worker is the default); use `--jobs 1` for CUDA. A custom, longer scan can use:
 
-    ./experiment.sh microscopic --depths 1,2 --scales 0.03,0.1 --couplings 0,0.3,1,2 --seeds 0,1,2 --steps 800
+    ./experiment.sh microscopic --jobs 12 --depths 1,2 --scales 0.03,0.1 --couplings 0,0.3,1,2 --seeds 0,1,2 --steps 800
 
 The JSON and PDF are ignored by Git. To share only this experiment for analysis:
 

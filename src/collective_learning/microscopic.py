@@ -8,6 +8,8 @@ Coupling uses the original simultaneous parameter-diffusion update.
 import argparse
 import copy
 import json
+from concurrent.futures import ProcessPoolExecutor
+from contextlib import nullcontext
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -229,6 +231,13 @@ def plot(trials, path):
     plt.close(fig)
 
 
+def _worker(job):
+    args, depth, scale, coupling, seed = job
+    if args.device.type == "cpu":
+        torch.set_num_threads(1)
+    return trial(args, depth, scale, coupling, seed)
+
+
 def numbers(value, cast):
     parts = [cast(part) for part in value.split(",")]
     if not parts or len(set(parts)) != len(parts):
@@ -251,6 +260,7 @@ def run(args):
     seeds = numbers(args.seeds, int)
     if (args.units < 2 or args.units % 2 or args.width < 2
             or args.steps < 1 or args.batch < 1 or args.evaluation < 1
+            or args.jobs < 1
             or args.rate <= 0 or args.decay < 0
             or any(d < 0 for d in depths)
             or any(not np.isfinite(s) or s <= 0 for s in scales)
@@ -258,6 +268,8 @@ def run(args):
         raise ValueError("Invalid training budget, depth, weight scale or coupling")
 
     args.device = torch.device(args.device)
+    if args.jobs > 1 and args.device.type != "cpu":
+        raise ValueError("Multiple workers are supported for CPU runs only")
     if args.device.type == "cpu":
         torch.set_num_threads(1)
     output = Path(args.output)
@@ -267,23 +279,31 @@ def run(args):
     total = len(depths) * len(scales) * len(couplings) * len(seeds)
     print(f"Microscopic scan: {total} paired trials, {args.steps} updates each", flush=True)
 
-    for depth in depths:
-        for scale in scales:
-            for coupling in couplings:
-                for seed in seeds:
-                    result = trial(args, depth, scale, coupling, seed)
-                    trials.append(result)
-                    final = result["history"][-1]
-                    print(
-                        f"{len(trials)}/{total} D={depth} init={scale:g} "
-                        f"sigma={coupling:g} seed={seed} "
-                        f"uniform={final['uniform']['individual_loss']:.5f} "
-                        f"specialists={final['specialists']['individual_loss']:.5f} "
-                        f"delta={final['advantage']:+.5f}", flush=True
-                    )
-                    output.write_text(json.dumps({
-                        "config": config, "complete": False, "trials": trials
-                    }, indent=2))
+    jobs = [
+        (args, depth, scale, coupling, seed)
+        for depth in depths for scale in scales
+        for coupling in couplings for seed in seeds
+    ]
+    executor = (
+        ProcessPoolExecutor(max_workers=args.jobs)
+        if args.jobs > 1 else nullcontext()
+    )
+    with executor as pool:
+        results = pool.map(_worker, jobs) if pool else map(_worker, jobs)
+        for result in results:
+            trials.append(result)
+            final = result["history"][-1]
+            print(
+                f"{len(trials)}/{total} D={result['depth']} "
+                f"init={result['init_scale']:g} "
+                f"sigma={result['coupling']:g} seed={result['seed']} "
+                f"uniform={final['uniform']['individual_loss']:.5f} "
+                f"specialists={final['specialists']['individual_loss']:.5f} "
+                f"delta={final['advantage']:+.5f}", flush=True
+            )
+            output.write_text(json.dumps({
+                "config": config, "complete": False, "trials": trials
+            }, indent=2))
 
     output.write_text(json.dumps({
         "config": config, "complete": True, "trials": trials
@@ -307,6 +327,7 @@ def parse_args():
     parser.add_argument("--decay", type=float, default=0.001)
     parser.add_argument("--evaluation", type=int, default=256)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--jobs", type=int, default=1, help="Parallel CPU trials")
     parser.add_argument("--output", default="results/microscopic_timescales.json")
     parser.add_argument("--smoke", action="store_true")
     return parser.parse_args()

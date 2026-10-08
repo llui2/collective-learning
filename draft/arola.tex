@@ -12,52 +12,55 @@
 \title{Specialization in coupled learners}
 \author{}
 \date{}
-\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
-\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{9pt plus 2pt minus 2pt}
+\setlength{\intextsep}{9pt plus 2pt minus 2pt}
 
 \begin{document}
 \maketitle
 
 \section{Task allocation}
 
-We tested whether division of labor could emerge among four
-coupled deep-linear learners \cite{arola2024}. Each network learns
-two tasks, with allocation $a_i$ controlling its training effort:
+We tested whether a useful division of labor could emerge in
+coupled learners \cite{arola2024}. Each network allocates a fraction
+$a_i$ of its effort to task $A$ and the rest to $B$, while
+parameter diffusion exchanges what the networks learn:
 \begin{align}
 L_i &= a_i L_A(\theta_i) + (1-a_i) L_B(\theta_i)
-+ \frac{\gamma}{2}\|\theta_i\|^2, \\
++ \frac{\gamma}{2}\|\theta_i\|^2,\\
 \theta_i^{t+1} &= \theta_i^t - \eta\nabla_{\theta_i}L_i
 + \frac{\eta\sigma}{N}\sum_j A_{ij}(\theta_j^t-\theta_i^t).
 \end{align}
-Here $\sigma$ controls parameter exchange and $A_{ij}=1$ for
-distinct learners. Every learner is evaluated on both tasks.
+Here $\sigma$ controls coupling. Every network is tested on
+both tasks, regardless of its allocation.
 
-Assigning complementary specialists ($a_i=0$ or $1$) gives a
-\emph{transient learning-speed advantage} over generalists
-($a_i=1/2$) when coupling is sufficient (Fig.~\ref{fig:results}(a)).
-Without coupling, specialists cannot learn their unassigned task.
+\emph{Imposed specialization works temporarily.}
+Assigning complementary tasks to different learners improves
+early learning when coupling transfers their knowledge.
 
-We then let individual allocations mutate, retaining a mutation
-when a short validation rollout improved collective loss.
-This rule did not discover the beneficial division of labor:
-the initially faster adaptation later fell behind generalists
-(Fig.~\ref{fig:results}(b)).
+\emph{Adaptive specialization does not emerge.}
+When individual allocations mutate and are selected by
+short-term collective validation loss, they become unequal
+(Fig.~\ref{fig:results}a), but this differentiation produces
+no sustained learning advantage (Fig.~\ref{fig:results}b).
+Random drift gives a similar degree of differentiation.
 
 \begin{figure}[htb!]
 \centering
-\includegraphics[width=0.83\linewidth]{figures/arola.pdf}
-\caption{Learning advantage relative to generalists, averaged over
-12 paired runs at $\sigma=1$. Positive values indicate lower
-individual test loss. (a) Imposed specialization.
-(b) Assigned specialists, selected mutations and neutral drift
-in the adaptive experiment.}
+\includegraphics[width=0.86\linewidth]{figures/arola.pdf}
+\caption{Allocation change does not imply useful specialization.
+(a) Distance of allocations from equal effort; $P=0$ for
+generalists and $P=1$ for fully polarized learners.
+(b) Reduction in individual test loss relative to generalists;
+positive values indicate an advantage. Mean trajectories and
+standard-deviation bands over 12 paired runs at $\sigma=1$.}
 \label{fig:results}
 \end{figure}
 
-Complementary specialization requires coordinated changes.
-Our rule instead selects one mutation at a time using short-term
-global validation loss. This may obstruct specialization,
-but the experiment does not establish the cause.
+The rule selects one learner's mutation at a time, although
+complementary specialization may require coordinated changes.
+This offers a possible explanation for the failure, not a
+demonstrated one. The result concerns our adaptation rule,
+not the original coupling model.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}

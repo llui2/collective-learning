@@ -63,9 +63,9 @@ On your Mac, with `latexmk` already installed:
 This regenerates the MoE and Arola figures and produces two PDFs:
 
 - `draft/main.pdf`: current MoE physical theory.
-- `draft/arola.pdf`: one-section account of the learning equations and the observed fixed-versus-evolving specialization outcomes, with a paired comparison plot.
+- `draft/arola.pdf`: one-page explanation and a two-panel plot comparing allocation differentiation with actual learning benefit.
 
-The Arola note uses committed paired runs to plot the transient learning advantage; it requires no neural retraining. The original
+The Arola note uses committed paired runs to compare allocation polarization and individual learning benefit; it requires no retraining. The original
 experiments and their datasets remain available separately. The baseline
 figure scripts can still be run independently if needed.
 
@@ -90,7 +90,7 @@ Their implementations and tests remain available. The Arola baseline and special
 - `src/collective_learning/moe_layer.py`: trainable token-level router, feed-forward experts, top-k masks and capacity.
 - `tests/test_moe.py`: tests against PyTorch autograd, finite-difference Jacobian and symmetry/collapse modes.
 - `draft/main.tex`, `draft/refs.bib`: current MoE mathematical starting point and references.
-- `draft/arola.tex`: one-section model, paired advantage plot, and limitation.
+- `draft/arola.tex`: one-section model, allocation and learning outcomes, and limitation.
 - `draft/figures/arola.py`: plot from committed paired results.
 - `draft/figures/moe.py`: main two-panel numerical figure.
 - `src/collective_learning/core.py`, `theory.py`, `mnist.py`, `microscopic.py`, `adaptive.py`: earlier models.

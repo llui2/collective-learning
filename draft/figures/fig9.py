@@ -32,7 +32,7 @@ for item in data:
     if cfg["control"] != "adaptive":
         continue
     last = item["validation"][-1]
-    points[(float(cfg["strategy_rate"]), float(cfg["sigma"]))].append(
+    points[(float(cfg["strategy_rate"]), float(cfg["exploration"]), float(cfg["sigma"]))].append(
         (last["R"], last["routing_entropy"])
     )
 
@@ -41,23 +41,29 @@ if not points:
     raise SystemExit(0)
 
 fig, ax = plt.subplots(2, 1, figsize=(3.8, 4.7), sharex=True)
-rates = sorted({k[0] for k in points})
+conditions = sorted({(k[0], k[1]) for k in points})
+rates = sorted({r for r, _ in conditions})
+explorations = sorted({e for _, e in conditions})
 for k, rate in enumerate(rates):
     sigmas = sorted(s for r, s in points if r == rate)
     x = np.log10(sigmas)
     mean = np.array([
-        np.asarray(points[(rate, s)]).mean(axis=0) for s in sigmas
+        np.asarray(points[(rate, exploration, s)]).mean(axis=0) for s in sigmas
     ])
     std = np.array([
         np.asarray(points[(rate, s)]).std(axis=0) for s in sigmas
     ])
+    k = rates.index(rate)
     color = DEPTH_COLORS[k % len(DEPTH_COLORS)]
     marker = DEPTH_MARKERS[k % len(DEPTH_MARKERS)]
+    linestyle = "-" if exploration == explorations[0] else "--"
     for j in range(2):
         ax[j].plot(
             x, mean[:, j], color=color, marker=marker,
-            linewidth=1.0, markersize=0.82 * MARKERSIZE,
-            label=fr"$r={rate:g}$" if j == 0 else None,
+            linewidth=1.0, linestyle=linestyle,
+            markersize=0.82 * MARKERSIZE,
+            label=fr"$r={rate:g},,
+u={exploration:g}$" if j == 0 else None,
         )
         if any(len(points[(rate, s)]) > 1 for s in sigmas):
             ax[j].fill_between(
@@ -74,7 +80,7 @@ ax[0].set_ylim(bottom=0)
 ax[1].set_ylim(0, 1.03)
 ax[0].legend(
     loc="lower center", bbox_to_anchor=(0.5, 1.02),
-    ncol=len(rates), frameon=False, columnspacing=0.8,
+    ncol=len(rates), frameon=False, columnspacing=0.6,
     handletextpad=0.3,
 )
 panel_label(ax[0], "(a)")

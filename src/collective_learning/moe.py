@@ -135,7 +135,11 @@ def plot(data, path):
             for s in sims
         ])
         mean, sd = values.mean(axis=0), values.std(axis=0)
-        line, = axes[0].plot(times, mean, label=rf"$T={t:g}$")
+        line, = axes[0].plot(
+            times, mean, marker="o", markersize=3,
+            markevery=max(1, len(times) // 12),
+            label=rf"$T={t:g}$"
+        )
         axes[0].fill_between(
             times, np.maximum(mean - sd, 0), mean + sd,
             color=line.get_color(), alpha=0.15,
@@ -154,6 +158,8 @@ def plot(data, path):
         critical = 1 / np.sqrt(8 * args["expert_decay"] * args["router_decay"])
         if min(tau) < critical < max(tau):
             axes[1].axvline(critical, color="0.5", linestyle="--", linewidth=1)
+    for label, ax in zip(("(a)", "(b)"), axes):
+        ax.text(-0.16, 1.02, label, transform=ax.transAxes, va="bottom")
     axes[1].set_xlabel(r"Routing temperature $T$")
     axes[1].set_ylabel("Largest linear growth rate")
     fig.tight_layout()

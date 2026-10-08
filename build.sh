@@ -22,9 +22,10 @@ fi
 
 if [[ -s results/adaptive_theory.npz ]]; then
   "$python_bin" draft/figures/fig3.py
+  "$python_bin" draft/figures/fig7.py
 else
-  rm -f draft/figures/fig3.pdf
-  echo "missing results/adaptive_theory.npz; skip fig3"
+  rm -f draft/figures/fig3.pdf draft/figures/fig7.pdf
+  echo "missing results/adaptive_theory.npz; skip fig3 and fig7"
 fi
 
 shopt -s nullglob

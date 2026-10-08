@@ -24,7 +24,7 @@ Requires Python 3.11+, NumPy, PyTorch (for tests), and Matplotlib. LaTeX and `la
     .venv/bin/python -m pip install -r requirements.txt
     ./build.sh
 
-The build runs tests and generates the two-panel MoE figure. If `latexmk` is installed, it also compiles `draft/main.pdf`; otherwise it reports that PDF compilation was skipped without failing the numerical build. To require manuscript compilation, use `REQUIRE_LATEX=1 ./build.sh`. On Ubuntu, the optional packages are `latexmk`, `texlive-latex-recommended`, and `texlive-fonts-recommended`. It does not launch large neural experiments or push to GitHub. Run the separate reduced-model experiment with:
+The build runs tests and generates the two-panel MoE figure. If `latexmk` is installed, it also compiles all three manuscript PDFs; otherwise it reports that PDF compilation was skipped without failing the numerical build. To require manuscript compilation, use `REQUIRE_LATEX=1 ./build.sh`. On Ubuntu, the optional packages are `latexmk`, `texlive-latex-recommended`, and `texlive-fonts-recommended`. It does not launch large neural experiments or push to GitHub. Run the separate reduced-model experiment with:
 
     ./experiment.sh moe --smoke
     ./experiment.sh moe
@@ -53,6 +53,28 @@ experts, for interpretability rather than computational efficiency;
 the example is not an end-to-end transformer and does not learn token
 representations.
 
+## Local PDF build
+
+On a local machine with `latexmk` installed, run:
+
+    git pull --ff-only
+    ./build.sh
+
+This regenerates the figures and compiles three separate PDFs:
+
+- `draft/main.pdf`: current MoE physical theory.
+- `draft/arola_results.pdf`: short record of what worked and failed in the Arola-based specialization experiments.
+- `draft/arola_baseline.pdf`: original effective-theory and short MNIST baseline.
+
+The short Arola note reads the two committed 12-seed summary files and builds
+a two-panel learning-curve figure. No retraining is needed. The detailed
+baseline figures use the stored effective-theory and quick MNIST results.
+If `latexmk` is not installed (e.g. on Minerva), `./build.sh` runs the
+Python tests and main MoE figure but skips all three manuscript PDFs.
+To compile an individual document after generating its figures, run
+`cd draft && latexmk -pdf -interaction=nonstopmode main.tex` (or replace
+`main.tex` with the other source filename).
+
 ## Earlier experiments
 
 - `./experiment.sh theory`: Arola effective-theory reproduction.
@@ -67,6 +89,8 @@ Their implementations and tests remain available. The original Arola-focused man
 - `src/collective_learning/moe.py`: exact expected loss, gradients, stability matrix, trajectories and plotting.
 - `src/collective_learning/moe_layer.py`: trainable token-level router, feed-forward experts, top-k masks and capacity.
 - `tests/test_moe.py`: tests against PyTorch autograd, finite-difference Jacobian and symmetry/collapse modes.
-- `draft/main.tex`, `draft/refs.bib`: mathematical starting point and references.
+- `draft/main.tex`, `draft/refs.bib`: current MoE mathematical starting point and references.
+- `draft/arola_results.tex`: short, self-contained record of the earlier specialization experiments.
+- `draft/arola_baseline.tex`: retained original baseline.
 - `draft/figures/moe.py`: main two-panel numerical figure.
 - `src/collective_learning/core.py`, `theory.py`, `mnist.py`, `microscopic.py`, `adaptive.py`: earlier models.

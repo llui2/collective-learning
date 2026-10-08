@@ -134,27 +134,86 @@ if [[ "${RUN_ADAPTIVE_NEURAL:-1}" == "1" ]]; then
     adaptive_seeds=(0 1 2 3 4)
     adaptive_args=()
     adaptive_prefix="adaptive_neural_seed"
+  elif [[ "$adaptive_mode" == "validation" ]]; then
+    echo "== adaptive neural dynamics: long-time paired controls =="
+    adaptive_seeds=(0 1 2)
   else
-    echo "unknown ADAPTIVE_NEURAL_MODE=$adaptive_mode (use pilot, quick, or full)" >&2
+    echo "unknown ADAPTIVE_NEURAL_MODE=$adaptive_mode (use pilot, quick, full, or validation)" >&2
     exit 1
   fi
 
-  for seed in "${adaptive_seeds[@]}"; do
-    out="results/${adaptive_prefix}${seed}.json"
-    if [[ "${FORCE:-0}" != "1" ]] && adaptive_neural_complete "$out"; then
-      echo "skip $out"
-      continue
-    fi
+  if [[ "$adaptive_mode" == "validation" ]]; then
+    for seed in "${adaptive_seeds[@]}"; do
+      long_out="results/adaptive_neural_long_seed${seed}.json"
+      if [[ "${FORCE:-0}" != "1" ]] && adaptive_neural_complete "$long_out"; then
+        echo "skip $long_out"
+      else
+        echo "-- long adaptive neural seed $seed --"
+        "$python_bin" -m collective_learning.adaptive_neural \
+          --long --until-steady \
+          --steps "${VALIDATION_MAX_STEPS:-40000}" \
+          --seed "$seed" --device cuda \
+          --output "$long_out"
+        publish "long adaptive neural seed $seed" "$long_out"
+      fi
 
-    echo "-- adaptive neural seed $seed --"
-    "$python_bin" -m collective_learning.adaptive_neural \
-      --seed "$seed" \
-      --device cuda \
-      "${adaptive_args[@]}" \
-      --output "$out"
+      matched_steps="$("$python_bin" - "$long_out" <<'PY'
+import json
+import sys
+with open(sys.argv[1]) as f:
+    result = json.load(f)
+if not result["complete"] or len(result["results"]) != 1:
+    raise SystemExit("adaptive run is incomplete")
+print(result["results"][0]["steps_completed"])
+PY
+)"
+      frozen_out="results/adaptive_neural_frozen_seed${seed}.json"
+      frozen_current=0
+      if [[ "${FORCE:-0}" != "1" ]] && adaptive_neural_complete "$frozen_out"; then
+        frozen_current="$("$python_bin" - "$frozen_out" "$matched_steps" <<'PY'
+import json
+import sys
+with open(sys.argv[1]) as f:
+    result = json.load(f)
+row = result["results"][0]
+valid = (
+    result["config"].get("frozen_strategy") is True
+    and int(row["steps_completed"]) == int(sys.argv[2])
+)
+print(int(valid))
+PY
+)"
+      fi
+      if [[ "$frozen_current" == "1" ]]; then
+        echo "skip $frozen_out"
+      else
+        echo "-- paired frozen-strategy seed $seed ($matched_steps steps) --"
+        "$python_bin" -m collective_learning.adaptive_neural \
+          --long --frozen-strategy \
+          --steps "$matched_steps" \
+          --seed "$seed" --device cuda \
+          --output "$frozen_out"
+        publish "frozen-strategy neural control seed $seed" "$frozen_out"
+      fi
+    done
+  else
+    for seed in "${adaptive_seeds[@]}"; do
+      out="results/${adaptive_prefix}${seed}.json"
+      if [[ "${FORCE:-0}" != "1" ]] && adaptive_neural_complete "$out"; then
+        echo "skip $out"
+        continue
+      fi
 
-    publish "adaptive neural $adaptive_mode seed $seed" "$out"
-  done
+      echo "-- adaptive neural seed $seed --"
+      "$python_bin" -m collective_learning.adaptive_neural \
+        --seed "$seed" \
+        --device cuda \
+        "${adaptive_args[@]}" \
+        --output "$out"
+
+      publish "adaptive neural $adaptive_mode seed $seed" "$out"
+    done
+  fi
 fi
 
 mode="${MODE:-quick}"

@@ -36,6 +36,12 @@ else
   echo "no adaptive neural result files; skip fig4"
 fi
 
+# fig5 uses the completed, same-horizon quick sweep.
+"$python_bin" draft/figures/fig5.py
+
+# fig6 uses only complete, step-matched adaptive/frozen pairs.
+"$python_bin" draft/figures/fig6.py
+
 mnist_results=(results/mnist_seed*.json results/mnist_quick_seed*.json)
 if (( ${#mnist_results[@]} > 0 )); then
   "$python_bin" draft/figures/fig2.py

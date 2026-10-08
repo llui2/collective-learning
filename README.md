@@ -188,7 +188,7 @@ seeds and 12000 steps. Override the exploration scan through
 
 The 60000 MNIST training samples are divided into three mutually disjoint
 pools: ordinary SGD training, a small strategy-fitness probe, and a
-2048-sample validation set. All conditions use the same split and minibatch
+2048-sample validation set. The fixed PCA representation is fitted only on the ordinary SGD pool, without labels. All conditions use the same split and minibatch
 draws for a given seed. The validation set is used for time-resolved
 performance comparisons; the official MNIST test set is evaluated **once,
 at the predeclared final step** for each condition.

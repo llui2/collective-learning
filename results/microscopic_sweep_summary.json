@@ -1,0 +1,1218 @@
+{
+  "config": {
+    "couplings": "0,0.1,0.3,0.6,1,2,4",
+    "seeds": "0,1,2",
+    "rounds": 20,
+    "window": 10,
+    "units": 4,
+    "width": 2,
+    "batch": 32,
+    "rate": 0.04,
+    "decay": 0.01,
+    "mutation": 0.15,
+    "evaluation": 256,
+    "device": "cpu",
+    "output": "results/microscopic_sweep.json",
+    "smoke": false
+  },
+  "complete": true,
+  "trials": [
+    {
+      "seed": 0,
+      "coupling": 0.0,
+      "accepted_mutations": 9,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.062250211067294,
+          "ensemble_loss": 0.023366508539766073,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.07776740426197648,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.31482895255521726,
+          "ensemble_loss": 0.1581275835633278,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.3134027421474457,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 4.832030208490323e-05,
+          "off_task_loss": 0.6296095848083496
+        },
+        "frozen": {
+          "individual_loss": 0.06230421270993247,
+          "ensemble_loss": 0.02439929370302707,
+          "allocation_diversity": 7.15261288890302e-05,
+          "functional_diversity": 0.0758098317310214,
+          "allocations": [
+            0.5037719066328018,
+            0.49603685410126097,
+            0.5192126795132984,
+            0.5031470035145912
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.05633967399626272,
+          "ensemble_loss": 0.020657571498304605,
+          "allocation_diversity": 0.0006607582248893847,
+          "functional_diversity": 0.07136420346796513,
+          "allocations": [
+            0.39921329048586385,
+            0.34469674512297943,
+            0.34388620049531643,
+            0.3916221161115199
+          ]
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "coupling": 0.1,
+      "accepted_mutations": 7,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.06309608567971736,
+          "ensemble_loss": 0.04759094584733248,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.031010285019874573,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.29740176114137284,
+          "ensemble_loss": 0.16687599569559097,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.2610515207052231,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.0027090561925433576,
+          "off_task_loss": 0.5920944660902023
+        },
+        "frozen": {
+          "individual_loss": 0.06498833501245826,
+          "ensemble_loss": 0.05012008175253868,
+          "allocation_diversity": 7.15261288890302e-05,
+          "functional_diversity": 0.029736501164734364,
+          "allocations": [
+            0.5037719066328018,
+            0.49603685410126097,
+            0.5192126795132984,
+            0.5031470035145912
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.05738420889247209,
+          "ensemble_loss": 0.044504206627607346,
+          "allocation_diversity": 0.0024568839805418317,
+          "functional_diversity": 0.025759998708963394,
+          "allocations": [
+            0.39921329048586385,
+            0.3639769445645846,
+            0.49532892802612677,
+            0.3916221161115199
+          ]
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "coupling": 0.3,
+      "accepted_mutations": 7,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.07221551425755024,
+          "ensemble_loss": 0.06414219178259373,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.01614663563668728,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.29624974622856826,
+          "ensemble_loss": 0.1907963901758194,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.2109067514538765,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.013740999391302466,
+          "off_task_loss": 0.578758493065834
+        },
+        "frozen": {
+          "individual_loss": 0.07020255783572793,
+          "ensemble_loss": 0.06285557337105274,
+          "allocation_diversity": 7.15261288890302e-05,
+          "functional_diversity": 0.014693975448608398,
+          "allocations": [
+            0.5037719066328018,
+            0.49603685410126097,
+            0.5192126795132984,
+            0.5031470035145912
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.12290230439975858,
+          "ensemble_loss": 0.09572920203208923,
+          "allocation_diversity": 0.026820688265590607,
+          "functional_diversity": 0.05434618145227432,
+          "allocations": [
+            0.5037719066328018,
+            0.5689464651470375,
+            0.14251281676843078,
+            0.4533666965676399
+          ]
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "coupling": 0.6,
+      "accepted_mutations": 9,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.06880917656235397,
+          "ensemble_loss": 0.06871585082262754,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.00018664713570615277,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.2863339770119637,
+          "ensemble_loss": 0.20817025005817413,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.15632744133472443,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.032420439179986715,
+          "off_task_loss": 0.5402475148439407
+        },
+        "frozen": {
+          "individual_loss": 0.06905496376566589,
+          "ensemble_loss": 0.06896314397454262,
+          "allocation_diversity": 7.15261288890302e-05,
+          "functional_diversity": 0.00018364217066846322,
+          "allocations": [
+            0.5037719066328018,
+            0.49603685410126097,
+            0.5192126795132984,
+            0.5031470035145912
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.07101385062560439,
+          "ensemble_loss": 0.06737459823489189,
+          "allocation_diversity": 0.013620781619215398,
+          "functional_diversity": 0.007278511766344309,
+          "allocations": [
+            0.5037719066328018,
+            0.5689464651470375,
+            0.27803334401620206,
+            0.34780641119659095
+          ]
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "coupling": 1.0,
+      "accepted_mutations": 9,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.08701321226544678,
+          "ensemble_loss": 0.08701301272958517,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 3.796541676592824e-07,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.26922424137592316,
+          "ensemble_loss": 0.2193007841706276,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.09984694421291351,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.061135612428188324,
+          "off_task_loss": 0.477312870323658
+        },
+        "frozen": {
+          "individual_loss": 0.08879658486694098,
+          "ensemble_loss": 0.0887905778363347,
+          "allocation_diversity": 7.15261288890302e-05,
+          "functional_diversity": 1.2008090152448858e-05,
+          "allocations": [
+            0.5037719066328018,
+            0.49603685410126097,
+            0.5192126795132984,
+            0.5031470035145912
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.06453018542379141,
+          "ensemble_loss": 0.06262769363820553,
+          "allocation_diversity": 0.026101620269882667,
+          "functional_diversity": 0.003804979147389531,
+          "allocations": [
+            0.5564984171467547,
+            0.5689464651470375,
+            0.17795673132558018,
+            0.34780641119659095
+          ]
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "coupling": 2.0,
+      "accepted_mutations": 9,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.11697731027379632,
+          "ensemble_loss": 0.11697731167078018,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 8.112917144185473e-14,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.2628146605566144,
+          "ensemble_loss": 0.24650774151086807,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.03261383809149265,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.13799852319061756,
+          "off_task_loss": 0.38763079792261124
+        },
+        "frozen": {
+          "individual_loss": 0.12002824549563229,
+          "ensemble_loss": 0.12002678029239178,
+          "allocation_diversity": 7.15261288890302e-05,
+          "functional_diversity": 2.9331135920074303e-06,
+          "allocations": [
+            0.5037719066328018,
+            0.49603685410126097,
+            0.5192126795132984,
+            0.5031470035145912
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.1093093347735703,
+          "ensemble_loss": 0.10905700549483299,
+          "allocation_diversity": 0.01178010475963814,
+          "functional_diversity": 0.000504652489325963,
+          "allocations": [
+            0.5564984171467547,
+            0.5689464651470375,
+            0.34388620049531643,
+            0.34780641119659095
+          ]
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "coupling": 4.0,
+      "accepted_mutations": 9,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.14195002219639719,
+          "ensemble_loss": 0.14195003639906645,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 7.754128387288655e-15,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.21684496570378542,
+          "ensemble_loss": 0.21407362446188927,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.00554270320571959,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.17098484374582767,
+          "off_task_loss": 0.26270508766174316
+        },
+        "frozen": {
+          "individual_loss": 0.1456877146847546,
+          "ensemble_loss": 0.14568738173693419,
+          "allocation_diversity": 7.15261288890302e-05,
+          "functional_diversity": 6.699681307509309e-07,
+          "allocations": [
+            0.5037719066328018,
+            0.49603685410126097,
+            0.5192126795132984,
+            0.5031470035145912
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.13628533435985446,
+          "ensemble_loss": 0.13622155226767063,
+          "allocation_diversity": 0.01178010475963814,
+          "functional_diversity": 0.00012756172509398311,
+          "allocations": [
+            0.5564984171467547,
+            0.5689464651470375,
+            0.34388620049531643,
+            0.34780641119659095
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "coupling": 0.0,
+      "accepted_mutations": 11,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.009157680155112757,
+          "ensemble_loss": 0.004242355469614267,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.00983064854517579,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.27724918362855533,
+          "ensemble_loss": 0.13924405723810196,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.2760102301836014,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 4.965836524206679e-05,
+          "off_task_loss": 0.5544487088918686
+        },
+        "frozen": {
+          "individual_loss": 0.01206295380507072,
+          "ensemble_loss": 0.005429723532870412,
+          "allocation_diversity": 0.0005832981921456542,
+          "functional_diversity": 0.013266460737213492,
+          "allocations": [
+            0.5103675257619436,
+            0.5246485443050347,
+            0.5099131122855016,
+            0.4609052830518692
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.009079037286937819,
+          "ensemble_loss": 0.0037011028034612536,
+          "allocation_diversity": 0.054927851468901466,
+          "functional_diversity": 0.010755868395790458,
+          "allocations": [
+            0.7777132555206762,
+            0.11879871952242449,
+            0.4465845505490486,
+            0.5068637023022999
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "coupling": 0.1,
+      "accepted_mutations": 11,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.06341922498540953,
+          "ensemble_loss": 0.04394171200692654,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.03895502723753452,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.2580842407041928,
+          "ensemble_loss": 0.14753644540905952,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.22109557688236237,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.004648475645808503,
+          "off_task_loss": 0.5115200057625771
+        },
+        "frozen": {
+          "individual_loss": 0.06491794320754707,
+          "ensemble_loss": 0.044340552762150764,
+          "allocation_diversity": 0.0005832981921456542,
+          "functional_diversity": 0.04115478880703449,
+          "allocations": [
+            0.5103675257619436,
+            0.5246485443050347,
+            0.5099131122855016,
+            0.4609052830518692
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.06452674674801528,
+          "ensemble_loss": 0.04464376159012318,
+          "allocation_diversity": 0.023716819712191802,
+          "functional_diversity": 0.03976597357541323,
+          "allocations": [
+            0.7777132555206762,
+            0.3677885536822489,
+            0.4478058776268002,
+            0.5068637023022999
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "coupling": 0.3,
+      "accepted_mutations": 12,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.04562715830979869,
+          "ensemble_loss": 0.037639678455889225,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.015974958892911673,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.22825335443485528,
+          "ensemble_loss": 0.1517583206295967,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.15299008786678314,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.01886473805643618,
+          "off_task_loss": 0.4376419708132744
+        },
+        "frozen": {
+          "individual_loss": 0.04703386942856014,
+          "ensemble_loss": 0.03861579578369856,
+          "allocation_diversity": 0.0005832981921456542,
+          "functional_diversity": 0.016836145892739296,
+          "allocations": [
+            0.5103675257619436,
+            0.5246485443050347,
+            0.5099131122855016,
+            0.4609052830518692
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.07374664989765733,
+          "ensemble_loss": 0.050085168331861496,
+          "allocation_diversity": 0.07521049724180752,
+          "functional_diversity": 0.047322969883680344,
+          "allocations": [
+            0.7777132555206762,
+            0.10312157368947744,
+            0.7530002916728982,
+            0.44026410189681325
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "coupling": 0.6,
+      "accepted_mutations": 10,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.006362183426972479,
+          "ensemble_loss": 0.006352929398417473,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 1.850792068580631e-05,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.28575250576250255,
+          "ensemble_loss": 0.21218816190958023,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.14712867140769958,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.037775182630866766,
+          "off_task_loss": 0.5337298288941383
+        },
+        "frozen": {
+          "individual_loss": 0.00622626073891297,
+          "ensemble_loss": 0.006210282212123275,
+          "allocation_diversity": 0.0005832981921456542,
+          "functional_diversity": 3.195703743585909e-05,
+          "allocations": [
+            0.5103675257619436,
+            0.5246485443050347,
+            0.5099131122855016,
+            0.4609052830518692
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.006404843297787011,
+          "ensemble_loss": 0.006162250181660056,
+          "allocation_diversity": 0.018628075788389455,
+          "functional_diversity": 0.00048518527182750404,
+          "allocations": [
+            0.7777132555206762,
+            0.5466985436298574,
+            0.5425114019388861,
+            0.39639558925205
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "coupling": 1.0,
+      "accepted_mutations": 11,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.004698795062722638,
+          "ensemble_loss": 0.004698785021901131,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 2.0328875915964773e-08,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.16419913643039763,
+          "ensemble_loss": 0.1309591308236122,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.06647998094558716,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.03287944244220853,
+          "off_task_loss": 0.29551883041858673
+        },
+        "frozen": {
+          "individual_loss": 0.004617850645445287,
+          "ensemble_loss": 0.004611989832483232,
+          "allocation_diversity": 0.0005832981921456542,
+          "functional_diversity": 1.1722180261131143e-05,
+          "allocations": [
+            0.5103675257619436,
+            0.5246485443050347,
+            0.5099131122855016,
+            0.4609052830518692
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.0063513461500406265,
+          "ensemble_loss": 0.00601032841950655,
+          "allocation_diversity": 0.046349974352166375,
+          "functional_diversity": 0.0006820358685217798,
+          "allocations": [
+            0.7777132555206762,
+            0.5227963093948643,
+            0.8501484701404873,
+            0.30656865735685584
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "coupling": 2.0,
+      "accepted_mutations": 10,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.0043580599303822964,
+          "ensemble_loss": 0.004358059959486127,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 3.336294727897954e-14,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.04300272872205824,
+          "ensemble_loss": 0.038083652034401894,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.00983814848586917,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.015699261566624045,
+          "off_task_loss": 0.07030619587749243
+        },
+        "frozen": {
+          "individual_loss": 0.004297112900530919,
+          "ensemble_loss": 0.004295420600101352,
+          "allocation_diversity": 0.0005832981921456542,
+          "functional_diversity": 3.3847538816189626e-06,
+          "allocations": [
+            0.5103675257619436,
+            0.5246485443050347,
+            0.5099131122855016,
+            0.4609052830518692
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.00489821468363516,
+          "ensemble_loss": 0.004790422390215099,
+          "allocation_diversity": 0.04388106025281785,
+          "functional_diversity": 0.00021558424487011507,
+          "allocations": [
+            0.7777132555206762,
+            0.6033392946989071,
+            0.8501484701404873,
+            0.30656865735685584
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "coupling": 4.0,
+      "accepted_mutations": 12,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.004350330535089597,
+          "ensemble_loss": 0.0043503305641934276,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 5.216057370674833e-15,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.014418667647987604,
+          "ensemble_loss": 0.013808873947709799,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.0012195875751785934,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.008630560478195548,
+          "off_task_loss": 0.02020677481777966
+        },
+        "frozen": {
+          "individual_loss": 0.004303138557588682,
+          "ensemble_loss": 0.004302676417864859,
+          "allocation_diversity": 0.0005832981921456542,
+          "functional_diversity": 9.251251640307601e-07,
+          "allocations": [
+            0.5103675257619436,
+            0.5246485443050347,
+            0.5099131122855016,
+            0.4609052830518692
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.0044827761594206095,
+          "ensemble_loss": 0.004458869225345552,
+          "allocation_diversity": 0.028465589947569578,
+          "functional_diversity": 4.7814321078476496e-05,
+          "allocations": [
+            0.7777132555206762,
+            0.6041638417611921,
+            0.5425114019388861,
+            0.30656865735685584
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "coupling": 0.0,
+      "accepted_mutations": 9,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.0006976678705541417,
+          "ensemble_loss": 0.0005474146018968895,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.00030050650821067393,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.2668722082776185,
+          "ensemble_loss": 0.13539918512105942,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.2629460468888283,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 6.497593767562648e-05,
+          "off_task_loss": 0.5336794406175613
+        },
+        "frozen": {
+          "individual_loss": 0.0014508332988043549,
+          "ensemble_loss": 0.0008998114062706009,
+          "allocation_diversity": 0.0008773189541119082,
+          "functional_diversity": 0.0011020438832929358,
+          "allocations": [
+            0.505671601453806,
+            0.4843175467555776,
+            0.4876080936982432,
+            0.4267559785208043
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.0005465623016789323,
+          "ensemble_loss": 0.00046412760275416076,
+          "allocation_diversity": 0.012240289657691049,
+          "functional_diversity": 0.0001648696415941231,
+          "allocations": [
+            0.5770231848928224,
+            0.6460689128664723,
+            0.617427391329911,
+            0.862650209185065
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "coupling": 0.1,
+      "accepted_mutations": 9,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.04635124059859663,
+          "ensemble_loss": 0.03355634771287441,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.02558977622538805,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.24237429373897612,
+          "ensemble_loss": 0.14403170347213745,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.19668516516685486,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.004722439218312502,
+          "off_task_loss": 0.48002614825963974
+        },
+        "frozen": {
+          "individual_loss": 0.049771923979278654,
+          "ensemble_loss": 0.03761574998497963,
+          "allocation_diversity": 0.0008773189541119082,
+          "functional_diversity": 0.024312349036335945,
+          "allocations": [
+            0.505671601453806,
+            0.4843175467555776,
+            0.4876080936982432,
+            0.4267559785208043
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.042305344133637846,
+          "ensemble_loss": 0.02887466363608837,
+          "allocation_diversity": 0.002781231632126684,
+          "functional_diversity": 0.026861359365284443,
+          "allocations": [
+            0.7032420189109224,
+            0.6460689128664723,
+            0.617427391329911,
+            0.7542855783389402
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "coupling": 0.3,
+      "accepted_mutations": 10,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.10420626867562532,
+          "ensemble_loss": 0.09109759982675314,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.026217328384518623,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.22834797808900476,
+          "ensemble_loss": 0.1587599441409111,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.13917604833841324,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.021205385215580463,
+          "off_task_loss": 0.43549057096242905
+        },
+        "frozen": {
+          "individual_loss": 0.10923423399799503,
+          "ensemble_loss": 0.09528621658682823,
+          "allocation_diversity": 0.0008773189541119082,
+          "functional_diversity": 0.027896038722246885,
+          "allocations": [
+            0.505671601453806,
+            0.4843175467555776,
+            0.4876080936982432,
+            0.4267559785208043
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.11009773198748007,
+          "ensemble_loss": 0.09812856186181307,
+          "allocation_diversity": 0.008404538553238241,
+          "functional_diversity": 0.02393832430243492,
+          "allocations": [
+            0.577022273055401,
+            0.5994854308675994,
+            0.4998600950350882,
+            0.752548177137689
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "coupling": 0.6,
+      "accepted_mutations": 13,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.040352707233978435,
+          "ensemble_loss": 0.04012704570777714,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 0.00045132936065783724,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.19018051400780678,
+          "ensemble_loss": 0.14298530668020248,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.09439041465520859,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.028026573359966278,
+          "off_task_loss": 0.3523344546556473
+        },
+        "frozen": {
+          "individual_loss": 0.04347956777201034,
+          "ensemble_loss": 0.04316122381715104,
+          "allocation_diversity": 0.0008773189541119082,
+          "functional_diversity": 0.0006366916859406047,
+          "allocations": [
+            0.505671601453806,
+            0.4843175467555776,
+            0.4876080936982432,
+            0.4267559785208043
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.046446485619526356,
+          "ensemble_loss": 0.04504690319299698,
+          "allocation_diversity": 0.014670238316491075,
+          "functional_diversity": 0.0027991661554551683,
+          "allocations": [
+            0.7032420189109224,
+            0.5994854308675994,
+            0.43616696174730635,
+            0.752548177137689
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "coupling": 1.0,
+      "accepted_mutations": 13,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.028784103866200894,
+          "ensemble_loss": 0.028783882269635797,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 4.434706717404424e-07,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.09244419762399048,
+          "ensemble_loss": 0.07440627925097942,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.03607584163546562,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.01946827652864158,
+          "off_task_loss": 0.16542011871933937
+        },
+        "frozen": {
+          "individual_loss": 0.03483278863132,
+          "ensemble_loss": 0.0347914423327893,
+          "allocation_diversity": 0.0008773189541119082,
+          "functional_diversity": 8.268568444691482e-05,
+          "allocations": [
+            0.505671601453806,
+            0.4843175467555776,
+            0.4876080936982432,
+            0.4267559785208043
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.039924192024045624,
+          "ensemble_loss": 0.03947774518746883,
+          "allocation_diversity": 0.014670238316491075,
+          "functional_diversity": 0.0008928946772357449,
+          "allocations": [
+            0.7032420189109224,
+            0.5994854308675994,
+            0.43616696174730635,
+            0.752548177137689
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "coupling": 2.0,
+      "accepted_mutations": 14,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.02503295244241599,
+          "ensemble_loss": 0.025032952427864075,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 1.2390173319298294e-13,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.03339212661376223,
+          "ensemble_loss": 0.030209959018975496,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.006364335305988789,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.013876210316084325,
+          "off_task_loss": 0.052908042911440134
+        },
+        "frozen": {
+          "individual_loss": 0.03394235658925027,
+          "ensemble_loss": 0.03393232874805108,
+          "allocation_diversity": 0.0008773189541119082,
+          "functional_diversity": 2.0058881432305498e-05,
+          "allocations": [
+            0.505671601453806,
+            0.4843175467555776,
+            0.4876080936982432,
+            0.4267559785208043
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.03713579147006385,
+          "ensemble_loss": 0.03697881172411144,
+          "allocation_diversity": 0.01597169745445992,
+          "functional_diversity": 0.0003139605905744247,
+          "allocations": [
+            0.7032420189109224,
+            0.5994854308675994,
+            0.43616696174730635,
+            0.7715723542044695
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "coupling": 4.0,
+      "accepted_mutations": 14,
+      "test": {
+        "uniform": {
+          "individual_loss": 0.02343535955878906,
+          "ensemble_loss": 0.023435358540154994,
+          "allocation_diversity": 0.0,
+          "functional_diversity": 4.346855347729401e-15,
+          "allocations": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "specialists": {
+          "individual_loss": 0.021709941036533564,
+          "ensemble_loss": 0.021057866048067808,
+          "allocation_diversity": 0.25,
+          "functional_diversity": 0.001304149947827682,
+          "allocations": [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          "own_task_loss": 0.014358227024786174,
+          "off_task_loss": 0.029061655048280954
+        },
+        "frozen": {
+          "individual_loss": 0.033982122884481214,
+          "ensemble_loss": 0.033979521424043924,
+          "allocation_diversity": 0.0008773189541119082,
+          "functional_diversity": 5.204716330808878e-06,
+          "allocations": [
+            0.505671601453806,
+            0.4843175467555776,
+            0.4876080936982432,
+            0.4267559785208043
+          ]
+        },
+        "evolving": {
+          "individual_loss": 0.037041920790215954,
+          "ensemble_loss": 0.03699540119851008,
+          "allocation_diversity": 0.01597169745445992,
+          "functional_diversity": 9.303334854848799e-05,
+          "allocations": [
+            0.7032420189109224,
+            0.5994854308675994,
+            0.43616696174730635,
+            0.7715723542044695
+          ]
+        }
+      }
+    }
+  ]
+}

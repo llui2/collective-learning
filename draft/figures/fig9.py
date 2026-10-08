@@ -44,14 +44,14 @@ fig, ax = plt.subplots(2, 1, figsize=(3.8, 4.7), sharex=True)
 conditions = sorted({(k[0], k[1]) for k in points})
 rates = sorted({r for r, _ in conditions})
 explorations = sorted({e for _, e in conditions})
-for k, rate in enumerate(rates):
-    sigmas = sorted(s for r, s in points if r == rate)
+for rate, exploration in conditions:
+    sigmas = sorted(s for r, e, s in points if r == rate and e == exploration)
     x = np.log10(sigmas)
     mean = np.array([
         np.asarray(points[(rate, exploration, s)]).mean(axis=0) for s in sigmas
     ])
     std = np.array([
-        np.asarray(points[(rate, s)]).std(axis=0) for s in sigmas
+        np.asarray(points[(rate, exploration, s)]).std(axis=0) for s in sigmas
     ])
     k = rates.index(rate)
     color = DEPTH_COLORS[k % len(DEPTH_COLORS)]
@@ -62,10 +62,9 @@ for k, rate in enumerate(rates):
             x, mean[:, j], color=color, marker=marker,
             linewidth=1.0, linestyle=linestyle,
             markersize=0.82 * MARKERSIZE,
-            label=fr"$r={rate:g},,
-u={exploration:g}$" if j == 0 else None,
+            label=fr"$r={rate:g},\,\nu={exploration:g}$" if j == 0 else None,
         )
-        if any(len(points[(rate, s)]) > 1 for s in sigmas):
+        if any(len(points[(rate, exploration, s)]) > 1 for s in sigmas):
             ax[j].fill_between(
                 x, mean[:, j] - std[:, j], mean[:, j] + std[:, j],
                 color=color, alpha=0.22, linewidth=0,

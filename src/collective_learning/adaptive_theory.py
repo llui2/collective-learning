@@ -10,7 +10,7 @@ from scipy.integrate import solve_ivp
 from tqdm.auto import tqdm
 
 
-VERSION = 6
+VERSION = 7
 
 
 def theory_parameters(args, nus):
@@ -87,7 +87,24 @@ def observables(solution, runs, units, components):
         axis=2,
     )
 
-    return genotype.mean(axis=0), phenotype.mean(axis=0)
+    # The objective used in the marginal-contribution fitness.
+    collective_loss = 0.5 * np.sum(
+        (1.0 - m_bar[:, :, 0, :]) ** 2, axis=-1
+    )
+
+    # Sum of learner-level allocation/competence covariances over components.
+    # Averaging the fast equation eliminates the diffusive term, leaving
+    # + drive*K * covariance as an explicit contribution to mean growth.
+    covariance = np.sum(
+        np.mean((a - a_bar) * (m - m_bar), axis=2), axis=-1
+    )
+
+    return (
+        genotype.mean(axis=0),
+        phenotype.mean(axis=0),
+        collective_loss.mean(axis=0),
+        covariance.mean(axis=0),
+    )
 
 
 def run_point(task):
@@ -164,7 +181,7 @@ def run_point(task):
         t_start = t_stop
         t_stop = min(t_stop + config["extension"], config["max_time"])
 
-    genotype, phenotype = observables(
+    genotype, phenotype, collective_loss, covariance = observables(
         last_solution,
         runs,
         units,
@@ -182,6 +199,8 @@ def run_point(task):
         sigma_idx,
         genotype,
         phenotype,
+        collective_loss,
+        covariance,
         residual,
         simplex_error,
         t_stop,
@@ -222,6 +241,8 @@ def simulate(args):
     shape = (len(nus), len(sigmas), args.runs)
     genotype = np.zeros(shape)
     phenotype = np.zeros(shape)
+    collective_loss = np.zeros(shape)
+    covariance = np.zeros(shape)
     residual = np.zeros((len(nus), len(sigmas)))
     simplex_error = np.zeros_like(residual)
     final_time = np.zeros_like(residual)
@@ -247,6 +268,8 @@ def simulate(args):
                     sigma_idx,
                     g,
                     s,
+                    loss,
+                    cov,
                     res,
                     simplex,
                     t_stop,
@@ -254,10 +277,15 @@ def simulate(args):
 
                 genotype[nu_idx, sigma_idx] = g
                 phenotype[nu_idx, sigma_idx] = s
+                collective_loss[nu_idx, sigma_idx] = loss
+                covariance[nu_idx, sigma_idx] = cov
                 residual[nu_idx, sigma_idx] = res
                 simplex_error[nu_idx, sigma_idx] = simplex
                 final_time[nu_idx, sigma_idx] = t_stop
                 progress.update(1)
+
+    homogeneous_loss = 0.5 * args.components * (1.0 - m_star) ** 2
+    collective_gain = homogeneous_loss - collective_loss
 
     return {
         "version": np.asarray(VERSION),
@@ -267,6 +295,13 @@ def simulate(args):
         "genotype_std": genotype.std(axis=2),
         "phenotype_mean": phenotype.mean(axis=2),
         "phenotype_std": phenotype.std(axis=2),
+        "collective_loss_mean": collective_loss.mean(axis=2),
+        "collective_loss_std": collective_loss.std(axis=2),
+        "collective_gain_mean": collective_gain.mean(axis=2),
+        "collective_gain_std": collective_gain.std(axis=2),
+        "covariance_mean": covariance.mean(axis=2),
+        "covariance_std": covariance.std(axis=2),
+        "homogeneous_loss": np.asarray(homogeneous_loss),
         "sigma_critical": sigma_critical,
         "residual": residual,
         "simplex_error": simplex_error,

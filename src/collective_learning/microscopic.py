@@ -119,8 +119,17 @@ def measure(models, data, allocations):
     return result
 
 
-def checkpoints_for(steps):
-    return sorted(set([0, steps] + np.geomspace(1, steps, 12).astype(int).tolist()))
+def checkpoints_for(steps, every=10):
+    """Uniformly spaced measurements; threshold times are interval-censored."""
+    return sorted(set(range(0, steps + 1, every)) | {steps})
+
+
+def first_crossing(history, strategy, threshold):
+    """First measured step with individual test loss at or below threshold."""
+    return next(
+        (h["step"] for h in history
+         if h[strategy]["individual_loss"] <= threshold), None
+    )
 
 
 def trial(args, depth, scale, coupling, seed):
@@ -144,7 +153,7 @@ def trial(args, depth, scale, coupling, seed):
         args.steps, args.batch, torch.Generator().manual_seed(seed + 100),
         args.device,
     )
-    checkpoints = checkpoints_for(args.steps)
+    checkpoints = checkpoints_for(args.steps, args.check_every)
     history = []
     previous = 0
     for step in checkpoints:
@@ -167,65 +176,171 @@ def trial(args, depth, scale, coupling, seed):
         history.append(recorded)
         previous = step
 
+    hits = {
+        str(threshold): {
+            name: first_crossing(history, name, threshold)
+            for name in ("uniform", "specialists")
+        }
+        for threshold in numbers(args.thresholds, float)
+    }
     return {
         "depth": int(depth), "init_scale": float(scale),
         "coupling": float(coupling), "seed": int(seed),
-        "history": history,
+        "first_crossing": hits, "history": history,
     }
 
 
-def plot(trials, path):
-    """Two diagnostic panels for a representative depth and weight scale."""
+def summarize(trials, args, complete):
+    """A compact, shareable summary. None denotes right-censored failure."""
+    thresholds = numbers(args.thresholds, float)
+    groups = {}
+    for trial_data in trials:
+        key = (trial_data["depth"], trial_data["init_scale"],
+               trial_data["coupling"])
+        groups.setdefault(key, []).append(trial_data)
+
+    entries = []
+    for (depth, scale, coupling), matched in sorted(groups.items()):
+        steps = [h["step"] for h in matched[0]["history"]]
+        means = {}
+        for strategy in ("uniform", "specialists"):
+            matrix = np.array([
+                [h[strategy]["individual_loss"] for h in t["history"]]
+                for t in matched
+            ])
+            means[strategy] = {
+                "mean": matrix.mean(axis=0).tolist(),
+                "std": matrix.std(axis=0).tolist(),
+            }
+        outcomes = {}
+        for threshold in thresholds:
+            label = str(threshold)
+            observed = {
+                strategy: [t["first_crossing"][label][strategy] for t in matched]
+                for strategy in ("uniform", "specialists")
+            }
+            # T^H=min(T,H): for censored runs use H, not a fictional hit.
+            differences = [
+                (u if u is not None else args.steps)
+                - (s if s is not None else args.steps)
+                for u, s in zip(observed["uniform"], observed["specialists"])
+            ]
+            both = [
+                u - s for u, s in zip(observed["uniform"], observed["specialists"])
+                if u is not None and s is not None
+            ]
+            outcomes[label] = {
+                "hit_uniform": sum(t is not None for t in observed["uniform"]),
+                "hit_specialists": sum(t is not None for t in observed["specialists"]),
+                "both_hit": len(both),
+                "specialists_faster_when_both_hit": sum(x > 0 for x in both),
+                "restricted_speedup_mean": float(np.mean(differences)),
+                "restricted_speedup_std": float(np.std(differences)),
+            }
+        entries.append({
+            "depth": depth, "init_scale": scale, "coupling": coupling,
+            "seeds": [t["seed"] for t in matched],
+            "checkpoints": steps, "individual_loss": means,
+            "thresholds": outcomes,
+            "final_off_task_loss_mean": float(np.mean([
+                t["history"][-1]["specialists"]["off_task_loss"]
+                for t in matched
+            ])),
+        })
+    per_trial = [
+        {
+            "depth": t["depth"], "init_scale": t["init_scale"],
+            "coupling": t["coupling"], "seed": t["seed"],
+            "first_crossing": t["first_crossing"],
+            "final_individual_loss": {
+                name: t["history"][-1][name]["individual_loss"]
+                for name in ("uniform", "specialists")
+            },
+            "final_specialist_off_task_loss": (
+                t["history"][-1]["specialists"]["off_task_loss"]
+            ),
+        }
+        for t in trials
+    ]
+    return {
+        "config": dict(vars(args), device=str(args.device)),
+        "complete": complete, "trials": per_trial, "groups": entries,
+        "interpretation": {
+            "crossing": "first recorded mean individual test loss <= threshold",
+            "censoring": "null means not reached by final observed update",
+            "resolution": "first crossing is observed on the checkpoint grid",
+            "restricted_speedup": "min(T_uniform,H)-min(T_specialists,H), H=steps",
+            "positive": "specialists reach the threshold earlier, within horizon",
+        },
+    }
+
+
+def plot(trials, args, path):
+    """Learning curves and predeclared restricted crossing-time comparison."""
     depths = sorted({t["depth"] for t in trials})
     scales = sorted({t["init_scale"] for t in trials})
     couplings = sorted({t["coupling"] for t in trials})
-    depth, scale = depths[len(depths) // 2], scales[len(scales) // 2]
-    matching = [
-        t for t in trials
-        if t["depth"] == depth and t["init_scale"] == scale
-    ]
-    selected = couplings[len(couplings) // 2]
-    selected_trials = [t for t in matching if t["coupling"] == selected]
-    steps = [record["step"] for record in selected_trials[0]["history"]]
+    depth = 1 if 1 in depths else depths[0]
+    scale = scales[0]
+    selected = 1.0 if 1.0 in couplings else couplings[len(couplings) // 2]
+    focus = [t for t in trials if t["depth"] == depth
+             and t["init_scale"] == scale and t["coupling"] == selected]
+    steps = [h["step"] for h in focus[0]["history"]]
+    threshold = numbers(args.thresholds, float)[0]
+    fig, axes = plt.subplots(2, 1, figsize=(6, 5.5))
 
-    fig, axes = plt.subplots(2, 1, figsize=(5.5, 5.8))
     for name in ("uniform", "specialists"):
         curves = np.array([
             [h[name]["individual_loss"] for h in t["history"]]
-            for t in selected_trials
+            for t in focus
         ])
         avg, std = curves.mean(axis=0), curves.std(axis=0)
-        line, = axes[0].plot(steps, avg, marker="o", markersize=3, label=name)
+        line, = axes[0].plot(steps, avg, label=name)
         axes[0].fill_between(
             steps, np.maximum(0, avg - std), avg + std,
-            color=line.get_color(), alpha=0.15
+            color=line.get_color(), alpha=0.16
         )
+    axes[0].axhline(threshold, color="0.5", linestyle=":", linewidth=1)
     axes[0].set_ylabel("Mean individual test loss")
-    axes[0].legend(frameon=False)
     axes[0].set_title(
         rf"$D={depth}$, initial scale $={scale:g}$, $\sigma={selected:g}$",
         fontsize=10,
     )
+    axes[0].legend(frameon=False)
 
-    for coupling in couplings:
-        group = [t for t in matching if t["coupling"] == coupling]
-        curves = np.array([
-            [h["advantage"] for h in t["history"]]
-            for t in group
-        ])
-        avg, std = curves.mean(axis=0), curves.std(axis=0)
+    for init_scale in scales:
+        points = []
+        spreads = []
+        for coupling in couplings:
+            group = [
+                t for t in trials if t["depth"] == depth
+                and t["init_scale"] == init_scale and t["coupling"] == coupling
+            ]
+            label = str(threshold)
+            differences = [
+                (t["first_crossing"][label]["uniform"]
+                 if t["first_crossing"][label]["uniform"] is not None
+                 else args.steps)
+                - (t["first_crossing"][label]["specialists"]
+                   if t["first_crossing"][label]["specialists"] is not None
+                   else args.steps)
+                for t in group
+            ]
+            points.append(np.mean(differences))
+            spreads.append(np.std(differences))
         line, = axes[1].plot(
-            steps, avg, marker="o", markersize=3,
-            label=rf"$\sigma={coupling:g}$"
+            couplings, points, marker="o",
+            label=rf"initial scale $={init_scale:g}$",
         )
+        points, spreads = np.array(points), np.array(spreads)
         axes[1].fill_between(
-            steps, avg - std, avg + std,
-            color=line.get_color(), alpha=0.15
+            couplings, points - spreads, points + spreads,
+            alpha=0.16, color=line.get_color()
         )
-    axes[1].axhline(0, color="0.4", linestyle=":", linewidth=1)
-    axes[1].set_xlabel("SGD updates")
-    axes[1].set_ylabel(r"$E_{\mathrm{uniform}}-E_{\mathrm{specialists}}$")
-    axes[1].legend(frameon=False, fontsize=8, ncol=2)
+    axes[1].axhline(0, color="0.5", linestyle=":", linewidth=1)
+    axes[1].set_xlabel(r"Parameter coupling $\sigma$")
+    axes[1].set_ylabel(r"Restricted $T_{\mathrm{uniform}}-T_{\mathrm{specialists}}$")
+    axes[1].legend(frameon=False, fontsize=8)
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)

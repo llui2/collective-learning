@@ -749,6 +749,12 @@ def run(args):
             device,
         )
         rows.append(row)
+        print(
+            f"  {row['steps_completed']} steps | "
+            f"R={row['R_test']:.4g} | Sx={row['S_sample_test']:.3g} | "
+            f"R drift={row['R_window_drift']} | {row['stop_reason']}",
+            flush=True,
+        )
 
         payload = {
             "config": config,

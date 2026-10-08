@@ -60,16 +60,15 @@ On your Mac, with `latexmk` already installed:
     git pull --ff-only
     ./build.sh
 
-This regenerates the figures and produces two PDFs:
+This generates the MoE figure and produces two PDFs:
 
 - `draft/main.pdf`: current MoE physical theory.
-- `draft/arola.pdf`: baseline, fixed-specialization benefit, failed adaptive-allocation experiment, and explanation of the limitation.
+- `draft/arola.pdf`: one-section account of the microscopic allocation model, fixed-specialization benefit, and unsuccessful adaptive rule.
 
-The Arola note uses the committed 12-seed results; there is no need to
-rerun the neural experiments. It replaces the separate `arola_results`
-and `arola_baseline` documents. Older copies of those generated PDFs
-are cleaned up by the build. The original experiments and detailed
-figure scripts remain in the repository.
+The one-page Arola note reports the committed 12-seed results; it requires
+no neural retraining or additional figure generation. The original
+experiments and their datasets remain available separately. The baseline
+figure scripts can still be run independently if needed.
 
 When `latexmk` is unavailable (e.g. on Minerva), the build runs Python
 tests and the MoE figure but skips manuscript compilation. To build
@@ -92,6 +91,6 @@ Their implementations and tests remain available. The Arola baseline and special
 - `src/collective_learning/moe_layer.py`: trainable token-level router, feed-forward experts, top-k masks and capacity.
 - `tests/test_moe.py`: tests against PyTorch autograd, finite-difference Jacobian and symmetry/collapse modes.
 - `draft/main.tex`, `draft/refs.bib`: current MoE mathematical starting point and references.
-- `draft/arola.tex`: short, accessible combined baseline and specialization outcomes note.
+- `draft/arola.tex`: single-section model, numerical outcome, and limitation.
 - `draft/figures/moe.py`: main two-panel numerical figure.
 - `src/collective_learning/core.py`, `theory.py`, `mnist.py`, `microscopic.py`, `adaptive.py`: earlier models.

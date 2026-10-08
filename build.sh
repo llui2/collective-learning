@@ -10,9 +10,6 @@ export MPLBACKEND=Agg
 "$python_bin" -m unittest discover -s tests -q
 "$python_bin" draft/figures/moe.py
 if command -v latexmk >/dev/null 2>&1; then
-  "$python_bin" draft/figures/arola_results.py
-  "$python_bin" draft/figures/fig1.py
-  rm -f draft/arola_results.pdf draft/arola_baseline.pdf
   (
     cd draft
     for name in main arola; do

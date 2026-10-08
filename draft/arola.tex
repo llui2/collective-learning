@@ -3,160 +3,64 @@
 \usepackage{lmodern}
 \usepackage{amsmath}
 \usepackage{microtype}
-\usepackage{graphicx}
-\usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage[numbers]{natbib}
 \usepackage[margin=1in]{geometry}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue!65!black,urlcolor=blue!65!black]{hyperref}
 
-\title{Coupled learning: what we tested and what happened}
+\title{Adaptive specialization in coupled learners}
 \author{}
 \date{}
 
 \begin{document}
 \maketitle
 
-\section*{Where we started}
+\section{Task allocation}
 
-The idea in Arola-Fern\'andez and Lacasa \cite{arola2024} is simple:
-several neural networks learn from their own data, but also exchange
-information by pulling their parameters toward one another. Each
-learner still has to learn; coupling only changes how information
-can move through the population. Schematically,
+We tested whether specialization could emerge in the
+parameter-coupled networks of Arola-Fern\'andez and Lacasa
+\cite{arola2024}. Four deep-linear learners were trained on two
+independent regression tasks, $A$ and $B$, with each network
+evaluated on both. Learner $i$ allocated a fraction
+$a_i \in [0,1]$ of its training effort to $A$:
 \begin{equation}
-\theta_i(t+1)=\theta_i(t)-\eta\nabla_{\theta_i}L_i
-+\frac{\eta\sigma}{N}\sum_j A_{ij}(\theta_j-\theta_i).
-\label{eq:coupling}
+L_i = a_i L_A(\theta_i) + (1-a_i)L_B(\theta_i)
+    + \frac{\gamma}{2}\|\theta_i\|^2.
+\label{eq:loss}
 \end{equation}
-Here $\sigma$ controls the strength of that exchange. The paper
-also derives a simpler description of deep linear networks,
-replacing their many parameters by effective variables.
+The allocation changed the local gradient, while diffusive coupling
+transferred parameters between networks:
+\begin{equation}
+\theta_i(t+1) = \theta_i(t) - \eta \nabla_{\theta_i} L_i
++ \frac{\eta\sigma}{N}\sum_j A_{ij}
+\bigl(\theta_j(t)-\theta_i(t)\bigr).
+\label{eq:dynamics}
+\end{equation}
+Here $\sigma$ controls coupling and $A_{ij}=1$ for distinct
+learners. We compared generalists ($a_i=1/2$) with complementary
+specialists ($a_i=0$ or $1$), keeping total learning effort fixed.
 
-We implemented the effective-theory baseline and checked its
-dependence on coupling and network depth (Fig.~\ref{fig:baseline}).
-We also ran a short, three-seed MNIST check; those neural runs
-were \emph{not} a full reproduction of the published protocol.
-The new question below was an extension, not a test of whether
-the original theory was correct.
+At $\sigma=1$, imposed specialists reached mean individual test
+loss $0.2$ after a median of $150$ updates, versus $185$ for
+generalists (faster in 11 of 12 paired runs). Without coupling,
+specialists could not learn their unassigned task within the
+600-update horizon. Thus specialization helped only when the
+networks could exchange what they learned.
 
-\begin{figure}[htbp!]
-\centering
-\includegraphics[width=0.83\linewidth]{figures/fig1.pdf}
-\caption{Numerical effective-theory baseline for different network
-depths. Left: mean effective state; right: normalized loss.
-Markers show averages, shading shows seed-to-seed variability,
-and dashed curves indicate the adiabatic protocol.}
-\label{fig:baseline}
-\end{figure}
+We then let allocations mutate one learner at a time, retaining
+a change only if it reduced population-mean validation loss after
+20 additional training updates. This did \emph{not} recover the
+advantage: across 12 seeds at $\sigma=1$, fixed specialists
+reached loss $0.2$ after $163$ updates on average, compared with
+$190$ for generalists, $190$ for neutral mutation drift, and
+$193$ for the selected mutations.
 
-\section*{The question we wanted to answer}
-
-What if learners do \emph{not} spend equal effort on every task?
-Could one network focus on task A and another on task B, then
-share what they learn through coupling? Would each network
-learn both tasks faster than if everyone studied everything?
-
-To test the idea, we used four small deep-linear networks and
-two simple tasks that every network could, in principle, learn.
-We kept their training effort, examples, and initial weights
-matched across conditions. We always evaluated \emph{every
-individual network on both tasks}: a better group prediction
-alone would not answer our question.
-
-\section*{First test: assign specialization by hand}
-
-We first compared two arrangements. In one, every network
-trained equally on both tasks. In the other, half trained
-only on A and half only on B. This division of labor was
-\emph{imposed from the beginning}; the networks did not choose it.
-
-At intermediate coupling, the specialists learned both tasks
-faster. For $\sigma=1$, specialists reached mean individual
-test loss $0.2$ in a median of $150$ updates, compared with
-$185$ for generalists; they were faster in 11 of 12 paired runs.
-Without coupling, they never reached that threshold within
-600 updates: knowing only one's own task was not enough.
-With weak coupling, the information arrived too slowly and
-specialization was usually worse.
-
-So there \emph{was} a benefit to dividing the work, but only
-when networks could exchange what they learned effectively.
-
-\section*{Second test: let specialization evolve}
-
-We then asked whether a division of labor would develop
-by itself. We started with nearly equal task allocations,
-occasionally changed one learner's allocation, and kept
-the change if a short trial reduced the population's
-average validation loss. We also tested fixed generalists,
-fixed specialists, unchanged near-generalists, and random
-allocation drift.
-
-\begin{table}[htbp!]
-\centering
-\begin{tabular}{lc}
-\toprule
-How learning was allocated & Updates to loss $0.2$\\
-\midrule
-Everyone studies both tasks & 190\\
-Specialization assigned in advance & \textbf{163}\\
-Nearly equal allocation, unchanged & 188\\
-Random allocation changes & 190\\
-Changes selected by validation loss & 193\\
-\bottomrule
-\end{tabular}
-\caption{Mean individual learning times across 12 seeds at
-$\sigma=1$. Allocations were reconsidered every 20 updates;
-times are measured on that same grid. Lower means faster.
-This is a separate 400-update experiment from the first test.}
-\label{tab:adaptive}
-\end{table}
-
-The selected allocations \emph{did not} reproduce the speedup
-of the hand-assigned specialists (Fig.~\ref{fig:learning}).
-They became different from one another, but random drift
-produced at least as much allocation differentiation.
-In this experiment, becoming different was not the same
-as finding a useful division of labor.
-
-\begin{figure}[htbp!]
-\centering
-\includegraphics[width=0.79\linewidth]{figures/arola_results.pdf}
-\caption{Mean individual test loss across 12 seeds, with shaded
-standard deviation. Top: generalists versus imposed specialists
-over 600 updates. Bottom: four allocation rules over 400 updates.
-Both use $\sigma=1$. The dotted line marks loss $0.2$.}
-\label{fig:learning}
-\end{figure}
-
-\section*{What was the problem?}
-
-The two tests answered different questions. The first showed that
-\emph{a good division of labor exists}. The second tried to find
-it by changing just one learner at a time and rewarding
-\emph{immediate} improvements in population loss.
-
-But the useful arrangement asks learners to take
-\emph{complementary} roles. A change that helps only after
-someone else changes might not be selected on its own.
-Our rule also used global validation data and extra
-counterfactual training: it was not an individual,
-ecologically grounded evolutionary mechanism.
-These are plausible reasons for the negative result,
-\emph{not} a demonstrated explanation of it.
-
-\section*{Takeaway}
-
-We found that coupling can make imposed specialization useful,
-but we did \emph{not} show how a population discovers it.
-That is a limitation of our proposed adaptive extension,
-not a failure of Arola's original model.
-
-We have kept the baseline and negative results as a record.
-The main project now studies mixture-of-experts architectures,
-where a learned router and the experts change each other's
-training conditions directly.
+The limitation is in the proposed adaptation rule, not the
+original coupling model. Complementary specialization requires
+coordinated allocations, but selection evaluated isolated
+mutations using short-term, global validation loss. This mismatch
+could prevent discovery of the useful configuration; the
+experiments do not establish that it caused the failure.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}

@@ -53,18 +53,21 @@ publish_result() {
   fi
 }
 
+read -r -a explorations <<< "${PERFORMANCE_EXPLORATIONS:-0.0005 0.03}"
+
 run_case() {
-  local control="$1" seed="$2" sigma="$3" rate="$4"
+  local control="$1" seed="$2" sigma="$3" rate="$4" exploration="$5"
   local sigma_key="${sigma//./p}"
   local rate_key="${rate//./p}"
+  local exp_key="${exploration//./p}"
   local suffix="seed${seed}_s${sigma_key}"
   if [[ "$control" == "adaptive" ]]; then
-    suffix="${suffix}_r${rate_key}"
+    suffix="${suffix}_r${rate_key}_e${exp_key}"
   fi
   local out="results/neural_performance_${control}_${suffix}.json"
 
   if [[ -s "$out" && "${FORCE:-0}" != "1" ]]; then
-    if "$python_bin" - "$out" "$steps" "$control" "$sigma" "$rate" <<'PY'
+    if "$python_bin" - "$out" "$steps" "$control" "$sigma" "$rate" "$exploration" <<'PY'
 import json
 import math
 import sys
@@ -79,7 +82,10 @@ try:
         and math.isclose(cfg["sigma"], float(sys.argv[4]))
         and (
             cfg["control"] != "adaptive"
-            or math.isclose(cfg["strategy_rate"], float(sys.argv[5]))
+            or (
+                math.isclose(cfg["strategy_rate"], float(sys.argv[5]))
+                and math.isclose(cfg["exploration"], float(sys.argv[6]))
+            )
         )
     )
 except (OSError, ValueError, KeyError, TypeError):
@@ -92,7 +98,7 @@ PY
     fi
   fi
 
-  echo "== $control seed=$seed sigma=$sigma rate=$rate =="
+  echo "== $control seed=$seed sigma=$sigma rate=$rate exploration=$exploration =="
   args=()
   if [[ "$mode" == "smoke" ]]; then
     args+=(--probe-samples 64 --validation-samples 128
@@ -102,18 +108,21 @@ PY
   "$python_bin" -m collective_learning.neural_performance \
     --control "$control" --seed "$seed" \
     --sigma "$sigma" --strategy-rate "$rate" \
+    --exploration "$exploration" \
     --steps "$steps" --eval-every "$eval_every" \
-    --device cuda --output "$out" "${args[$]}"
+    --device cuda --output "$out" "${args[@]}"
 
   publish_result "$out"
 }
 
-for seed in "${seeds[$]}"; do
-  for sigma in "${sigmas[$]}"; do
-    run_case uniform "$seed" "$sigma" 0
-    run_case frozen "$seed" "$sigma" 0
-    for rate in "${rates[$]}"; do
-      run_case adaptive "$seed" "$sigma" "$rate"
+for seed in "${seeds[@]}"; do
+  for sigma in "${sigmas[@]}"; do
+    run_case uniform "$seed" "$sigma" 0 0.0005
+    run_case frozen "$seed" "$sigma" 0 0.0005
+    for rate in "${rates[@]}"; do
+      for exploration in "${explorations[@]}"; do
+        run_case adaptive "$seed" "$sigma" "$rate" "$exploration"
+      done
     done
   done
 done

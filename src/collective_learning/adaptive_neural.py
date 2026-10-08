@@ -326,6 +326,21 @@ def probe_observables(
     }
 
 
+def relative_window_drift(steps, values, window):
+    """Relative change between consecutive time windows, not a proof of stationarity."""
+    time = np.asarray(steps)
+    series = np.asarray(values, dtype=float)
+    end = time[-1]
+    previous = series[(time >= end - 2 * window) & (time < end - window)]
+    recent = series[time >= end - window]
+    if len(previous) < 2 or len(recent) < 2:
+        return None
+    reference = float(previous.mean())
+    return float(
+        (recent.mean() - reference) / max(abs(reference), 1e-8)
+    )
+
+
 def fixed_probe_indices(size, count, seed, device):
     gen = torch.Generator(device=device).manual_seed(seed)
     return torch.randperm(
@@ -338,6 +353,8 @@ def sigma_grid(args):
         return np.asarray([0.01, 0.3, 10.0])
     if args.pilot:
         return np.asarray([0.001, 0.1, 10.0])
+    if args.long:
+        return np.asarray([0.001])
     if args.quick:
         return np.logspace(-3.0, 1.5, 10)
     return np.logspace(-3.0, 1.5, args.sigma_points)
@@ -393,6 +410,8 @@ def run_sigma(
     budget_error = 0.0
     max_strategy_step = 0.0
     last_losses = []
+    steady_checks = 0
+    steady_R = False
 
     initial_competence = sample_competence(
         ensemble, x_probe, y_probe
@@ -464,18 +483,20 @@ def run_sigma(
             competence = sample_competence(
                 ensemble, x_probe, y_probe
             )
-            fitness = sample_fitness(competence)
-
-            g, strategy_step = natural_strategy_step(
-                g,
-                phi_probe,
-                fitness,
-                temperature=args.temperature,
-                rate=args.strategy_rate,
-                exploration=args.exploration,
-                ridge=args.fisher_ridge,
-                max_step=args.max_strategy_step,
-            )
+            if args.frozen_strategy:
+                strategy_step = 0.0
+            else:
+                fitness = sample_fitness(competence)
+                g, strategy_step = natural_strategy_step(
+                    g,
+                    phi_probe,
+                    fitness,
+                    temperature=args.temperature,
+                    rate=args.strategy_rate,
+                    exploration=args.exploration,
+                    ridge=args.fisher_ridge,
+                    max_step=args.max_strategy_step,
+                )
             max_strategy_step = max(
                 max_strategy_step, strategy_step
             )
@@ -506,6 +527,31 @@ def run_sigma(
                 loss=f"{np.mean(last_losses):.3g}",
                 refresh=False,
             )
+
+            if (
+                args.until_steady
+                and not args.frozen_strategy
+                and step + 1 >= args.stationarity_min_steps
+                and (step + 1) % args.stationarity_check_every == 0
+            ):
+                drift = relative_window_drift(
+                    history["step"], history["R"], args.stationarity_window
+                )
+                if drift is not None and abs(drift) < args.stationarity_tolerance:
+                    steady_checks += 1
+                else:
+                    steady_checks = 0
+                if steady_checks >= args.stationarity_patience:
+                    steady_R = True
+                    break
+
+    steps_completed = step + 1
+    drift_R = relative_window_drift(
+        history["step"], history["R"], args.stationarity_window
+    )
+    drift_Sx = relative_window_drift(
+        history["step"], history["S_sample"], args.stationarity_window
+    )
 
     test_competence = sample_competence(
         ensemble, x_test, y_test
@@ -542,6 +588,12 @@ def run_sigma(
 
     return {
         "sigma": float(sigma),
+        "steps_completed": steps_completed,
+        "frozen_strategy": bool(args.frozen_strategy),
+        "R_window_drift": drift_R,
+        "Sx_window_drift": drift_Sx,
+        "steady_R": steady_R if args.until_steady else None,
+        "stop_reason": "R_plateau" if steady_R else "step_limit",
         "G_initial": float(history["G"][0]),
         "G": float(np.mean(tail_g)),
         "S": float(np.mean(tail_s)),
@@ -574,6 +626,13 @@ def run(args):
     torch.manual_seed(args.seed)
     if device.type == "cuda":
         torch.cuda.manual_seed_all(args.seed)
+
+    if args.units < 2 or args.steps < 1 or args.strategy_every < 1:
+        raise ValueError("require units >= 2, steps >= 1 and strategy_every >= 1")
+    if args.until_steady and args.stationarity_check_every % args.strategy_every:
+        raise ValueError("stationarity check interval must be a multiple of strategy_every")
+    if args.until_steady and args.frozen_strategy:
+        raise ValueError("stationarity stopping is defined for adaptive strategies only")
 
     if args.smoke:
         args.steps = 120
@@ -714,6 +773,13 @@ def parse_args():
     p.add_argument("--depth", type=int, default=1)
     p.add_argument("--width", type=int, default=20)
     p.add_argument("--steps", type=int, default=20000)
+    p.add_argument("--frozen-strategy", action="store_true")
+    p.add_argument("--until-steady", action="store_true")
+    p.add_argument("--stationarity-min-steps", type=int, default=12000)
+    p.add_argument("--stationarity-window", type=int, default=2000)
+    p.add_argument("--stationarity-check-every", type=int, default=1000)
+    p.add_argument("--stationarity-tolerance", type=float, default=0.02)
+    p.add_argument("--stationarity-patience", type=int, default=3)
     p.add_argument("--sigma-points", type=int, default=19)
     p.add_argument("--batch-size", type=int, default=96)
     p.add_argument("--strategy-every", type=int, default=25)
@@ -742,6 +808,7 @@ def parse_args():
     )
     p.add_argument("--pilot", action="store_true")
     p.add_argument("--quick", action="store_true")
+    p.add_argument("--long", action="store_true")
     p.add_argument("--smoke", action="store_true")
     return p.parse_args()
 

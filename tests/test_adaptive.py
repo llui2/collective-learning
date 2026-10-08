@@ -78,6 +78,18 @@ class AdaptiveTests(unittest.TestCase):
                     for value in data["trials"][0]["first_crossing"]["0.2"].values())
             )
 
+    def test_parallel_trials(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = self.args()
+            args.jobs = 2
+            args.output = str(Path(tmp) / "parallel.json")
+            result = run(args)
+            self.assertEqual(len(result), 2)
+            self.assertEqual([r["coupling"] for r in result], [0, 1])
+            self.assertTrue(
+                json.loads(Path(tmp, "parallel_summary.json").read_text())["complete"]
+            )
+
     def test_summary_is_compact_and_excludes_cross_task_matrix(self):
         args = self.args()
         t = trial(args, 0.03, 1, 2, 0)

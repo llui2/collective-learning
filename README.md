@@ -52,10 +52,10 @@ The positive fixed-specialization result motivates a new **mutation-selection**
 experiment, separate from the original fixed-allocation replication.
 Four depth-one, width-two deep-linear learners study two orthogonal tasks,
 with 400 SGD updates per experiment. Default conditions compare coupling
-\`0, 0.2, 1, 3\` at initialization scale \`0.03\`, with proposal intervals of
+`0, 0.2, 1, 3` at initialization scale `0.03`, with proposal intervals of
 20 or 60 SGD updates and 12 paired random seeds.
 
-Five controls share independent initial networks, local SGD budgets, and
+Five conditions share independent initial networks, local SGD budgets, and
 minibatches: uniform study, fixed complementary specialists, frozen weak
 heterogeneity, neutral mutation drift, and adaptive mutation-selection.
 The last three begin from the same weakly heterogeneous allocation.
@@ -76,8 +76,8 @@ only resolved to that window length. We must check that evolving
 allocations beat uniform and frozen allocations, and polarize more than
 neutral drift, before claiming beneficial division of labor.
 
-The command writes full histories to \`results/microscopic_adaptive.json\`,
-a compact shareable \`results/microscopic_adaptive_summary.json\`, and a
+The command writes full histories to `results/microscopic_adaptive.json`,
+a compact shareable `results/microscopic_adaptive_summary.json`, and a
 two-panel PDF. Run on Minerva, then push **only the summary**:
 
     git add -f results/microscopic_adaptive_summary.json
@@ -90,6 +90,7 @@ two-panel PDF. Run on Minerva, then push **only the summary**:
 - `src/collective_learning/theory.py`: original effective equations.
 - `src/collective_learning/mnist.py`: short MNIST baseline.
 - `src/collective_learning/microscopic.py`: focused learning-speed and coupling comparison.
+- `src/collective_learning/adaptive.py`: globally selected allocations and neutral-drift control.
 - `draft/main.tex`: baseline manuscript and open weighted-effective-theory question.
 - `results/theory_baseline.npz`, `results/mnist_quick_seed*.json`: retained baseline data.
 - `tests/`: learning and reproducibility checks.

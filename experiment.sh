@@ -143,6 +143,8 @@ if [[ "${RUN_ADAPTIVE_NEURAL:-1}" == "1" ]]; then
   fi
 
   if [[ "$adaptive_mode" == "validation" ]]; then
+    echo "== adaptive neural invariant tests =="
+    "$python_bin" -m unittest discover -s tests -q
     for seed in "${adaptive_seeds[@]}"; do
       long_out="results/adaptive_neural_long_seed${seed}.json"
       if [[ "${FORCE:-0}" != "1" ]] && adaptive_neural_complete "$long_out"; then

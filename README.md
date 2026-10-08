@@ -17,7 +17,7 @@ The build runs tests and regenerates baseline figures and `draft/main.pdf`; it d
     ./experiment.sh microscopic --smoke
     ./experiment.sh microscopic --jobs 12
 
-The current question is whether **fixed specialization shortens the time for each individual learner to generalize across both tasks**, and whether parameter diffusion contributes beyond the initial benefit of concentrated training. Evolution of allocations is disabled until a robust advantage is established.
+The current question is whether **fixed specialization shortens the time for each individual learner to generalize across both tasks**, and whether parameter diffusion contributes beyond the initial benefit of concentrated training. This fixed-allocation protocol is retained unchanged; the separate `adaptive` experiment below introduces evolutionary allocation.
 
 The pilot uses four jointly capable, two-layer linear networks learning the shared identity teacher on two independent task classes. Two identical populations receive identical model initializations, training minibatches, total local learning budgets and SGD updates: uniform learners divide effort equally, while specialists study one task exclusively. Diffusion between corresponding parameters can transmit information on the task a specialist never studies. We evaluate every learner on both tasks, never an ensemble prediction.
 

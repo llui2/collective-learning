@@ -18,8 +18,8 @@ import numpy as np
 import torch
 
 from .microscopic import (
-    advance, cross_loss, first_crossing, functional_diversity,
-    make_population, measure, numbers, task_data, training_stream,
+    advance, cross_loss, first_crossing, make_population, measure,
+    numbers, task_data, training_stream,
 )
 
 

@@ -1,96 +1,49 @@
 # Collective learning
 
-Reproduction of [Arola-Fernández and Lacasa, *Effective theory of collective deep learning*](https://doi.org/10.1103/PhysRevResearch.6.L042040), *Physical Review Research* **6**, L042040 (2024). The retained MNIST baseline comprises three short nonadiabatic seeds, not the full published training protocol.
+This repository now develops a physical description of **router–expert co-learning** in mixture-of-experts (MoE) architectures. The earlier [Arola-Fernández--Lacasa collective-learning baseline](https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.6.L042040) and fixed/adaptive allocation pilots remain in source control as independent comparison models.
 
-## Setup
+## Physical MoE starting point
 
-Requires Python 3.11+, LaTeX and latexmk:
+The [main draft](draft/main.tex) studies two token populations with opposing target slopes, two trainable linear experts and a learned softmax router. There are distinct collective modes for **conditional specialization** (different tokens prefer different experts) and **load collapse** (all tokens prefer the same expert). The objective is a differentiable training loss: task error, expert/router regularization and an optional aggregate load penalty. No diversity reward or external task allocation is imposed.
+
+The reduced equations have a tractable symmetric stationary state. Its expert-contrast/router-contrast mode becomes unstable when
+
+\[
+T < T_c = (8\kappa_e\kappa_r)^{-1/2},
+\]
+
+where \(T\) is router temperature and \(\kappa_e,\kappa_r\) are regularization strengths. The collapse mode is damped by the load-balancing penalty. Numerical gradient flow and checks against automatic differentiation verify the calculation.
+
+**Limitations:** this is a *soft*, two-expert **reduced model**, not a sparse top-k transformer, and scalar experts cannot individually solve both conflicting token populations. The calculation establishes a mechanism and testable stability predictions, not a result about production LLMs. The next stage is an actual trainable MoE feed-forward layer with token-level top-k selection, capacity effects and diagnostics for functional specialization.
+
+## Reproduce the reduced model
+
+Requires Python 3.11+, NumPy, PyTorch (for tests), Matplotlib and LaTeX/latexmk:
 
     python3 -m venv .venv
     .venv/bin/python -m pip install -r requirements.txt
     ./build.sh
 
-The build runs tests and regenerates baseline figures and `draft/main.pdf`; it does not train, pull or push. Recalculate the expensive theory ensemble explicitly with `./experiment.sh theory`, or the short MNIST baseline with `DEVICE=cuda ./experiment.sh mnist`. On Minerva, `./setup-minerva.sh` installs CUDA-compatible PyTorch when needed.
+The build runs tests, generates the two-panel MoE figure and compiles `draft/main.pdf`. It does not launch the large neural experiments or push to GitHub. Run the separate reduced-model experiment with:
 
-## Finite-time specialization experiment
+    ./experiment.sh moe --smoke
+    ./experiment.sh moe
 
-    ./experiment.sh microscopic --smoke
-    ./experiment.sh microscopic --jobs 12
+This saves `results/moe_reduced.json` and `results/moe_reduced.pdf`. To vary the stability boundary or timescales, adjust `--temperatures`, `--expert-rate`, `--router-rate`, `--expert-decay`, `--router-decay`, `--balance`, `--seeds`, and `--steps`. Each trajectory reports conditional routing contrast, load imbalance, expert contrast, expert-router alignment and data loss. Numerical results are ignored by Git unless explicitly added.
 
-The current question is whether **fixed specialization shortens the time for each individual learner to generalize across both tasks**, and whether parameter diffusion contributes beyond the initial benefit of concentrated training. This fixed-allocation protocol is retained unchanged; the separate `adaptive` experiment below introduces evolutionary allocation.
+## Earlier experiments
 
-The pilot uses four jointly capable, two-layer linear networks learning the shared identity teacher on two independent task classes. Two identical populations receive identical model initializations, training minibatches, total local learning budgets and SGD updates: uniform learners divide effort equally, while specialists study one task exclusively. Diffusion between corresponding parameters can transmit information on the task a specialist never studies. We evaluate every learner on both tasks, never an ensemble prediction.
+- `./experiment.sh theory`: Arola effective-theory reproduction.
+- `DEVICE=cuda ./experiment.sh mnist`: short MNIST baseline (not the complete published protocol).
+- `./experiment.sh microscopic`: fixed-specialization learning-speed pilot.
+- `./experiment.sh adaptive`: centralized mutation-selection pilot, which did **not** discover beneficial specialization.
 
-The focused default tests one hidden layer, weight initialization scales 0.03 and 0.1, coupling strengths 0, 0.2, 1 and 3, and 12 paired seeds, for 600 updates. Losses are measured on an independently generated test set every 10 updates. The **predeclared thresholds are 0.2 (primary) and 0.1 (secondary)** for mean individual test loss. The first observed checkpoint at or below each threshold is the measured hitting time.
+Their implementations and tests remain available. The original Arola-focused manuscript is preserved as `draft/arola_baseline.tex`; the current `draft/main.tex` is dedicated to learned routing dynamics. Original figure generation scripts remain in `draft/figures/fig1.py` and `fig2.py`. On Minerva, `./setup-minerva.sh` configures the neural baseline environment.
 
-A failed threshold crossing is stored as `null` (right-censored), **not as a successful crossing at the final update**. To compare paired experiments when one run never reaches a threshold, we also report the finite-horizon *restricted speedup*
-`min(T_uniform, H) - min(T_specialists, H)`, with `H=600`. Positive values indicate an earlier threshold crossing by specialists within the observed horizon; a value of zero can also mean both populations failed. Each summary includes the number of successful crossings by strategy and the number of pairs that both succeeded. Checkpoint resolution limits timing accuracy.
+## Key files
 
-The experiment writes:
-- `results/microscopic_speed.json`: complete individual-loss, transfer and diversity trajectories for local examination.
-- `results/microscopic_speed_summary.json`: compact individual first-passage times, censoring, group averages, spread, restricted speedups and paired seed identifiers.
-- `results/microscopic_speed.pdf`: two-panel diagnostic (learning curves and restricted speedup versus coupling).
-
-You can adjust the replication protocol explicitly:
-
-    ./experiment.sh microscopic --jobs 12 --seeds 0,1,2,3 --steps 800 --check-every 5
-
-**Do not select thresholds post hoc based on the results.** The scanned couplings and initializations are exploratory comparisons, and 12 seeds are not enough to infer a universal phase diagram. In particular, positive specialization advantage without coupling does not establish collective transfer; off-task loss of specialists and additional benefit relative to the uncoupled condition should be considered separately.
-
-When completed on Minerva, push only the compact summary (the full trajectories can be several MB):
-
-    git add -f results/microscopic_speed_summary.json
-    git commit -m "Add paired learning-speed results"
-    git push origin main
-
-## Adaptive task allocation
-
-    ./experiment.sh adaptive --smoke
-    ./experiment.sh adaptive --jobs 12
-
-The positive fixed-specialization result motivates a new **mutation-selection**
-experiment, separate from the original fixed-allocation replication.
-Four depth-one, width-two deep-linear learners study two orthogonal tasks,
-with 400 SGD updates per experiment. Default conditions compare coupling
-`0, 0.2, 1, 3` at initialization scale `0.03`, with proposal intervals of
-20 or 60 SGD updates and 12 paired random seeds.
-
-Five conditions share independent initial networks, local SGD budgets, and
-minibatches: uniform study, fixed complementary specialists, frozen weak
-heterogeneity, neutral mutation drift, and adaptive mutation-selection.
-The last three begin from the same weakly heterogeneous allocation.
-At each adaptation round a single allocation mutates, without rewarding
-diversity. **The evolving condition selects the mutation only if its
-counterfactual rollout has lower population-mean individual validation
-loss** than the unchanged rollout. Both use identical training examples,
-neural updates and initial parameters. This is an *oracle-guided global
-selection rule* using extra validation data and extra computation. It is
-not a decentralized model of self-organization.
-
-The key readouts are first-passage times to individual test losses 0.2
-and 0.1, allocation polarization (0 = generalists, 1 = fully polarized),
-allocation variance, task coverage and functional diversity. Results also
-include neutral drift, which can develop allocation diversity without
-fitness-based selection. For each selection window, threshold times are
-only resolved to that window length. We must check that evolving
-allocations beat uniform and frozen allocations, and polarize more than
-neutral drift, before claiming beneficial division of labor.
-
-The command writes full histories to `results/microscopic_adaptive.json`,
-a compact shareable `results/microscopic_adaptive_summary.json`, and a
-two-panel PDF. Run on Minerva, then push **only the summary**:
-
-    git add -f results/microscopic_adaptive_summary.json
-    git commit -m "Add adaptive allocation experiment results"
-    git push origin main
-
-## Files
-
-- `src/collective_learning/core.py`: baseline diffusive coupled SGD and weighted local loss.
-- `src/collective_learning/theory.py`: original effective equations.
-- `src/collective_learning/mnist.py`: short MNIST baseline.
-- `src/collective_learning/microscopic.py`: focused learning-speed and coupling comparison.
-- `src/collective_learning/adaptive.py`: globally selected allocations and neutral-drift control.
-- `draft/main.tex`: baseline manuscript and open weighted-effective-theory question.
-- `results/theory_baseline.npz`, `results/mnist_quick_seed*.json`: retained baseline data.
-- `tests/`: learning and reproducibility checks.
+- `src/collective_learning/moe.py`: exact expected loss, gradients, stability matrix, trajectories and plotting.
+- `tests/test_moe.py`: tests against PyTorch autograd, finite-difference Jacobian and symmetry/collapse modes.
+- `draft/main.tex`, `draft/refs.bib`: mathematical starting point and references.
+- `draft/figures/moe.py`: main two-panel numerical figure.
+- `src/collective_learning/core.py`, `theory.py`, `mnist.py`, `microscopic.py`, `adaptive.py`: earlier models.

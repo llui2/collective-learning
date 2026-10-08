@@ -14,7 +14,7 @@ T < T_c = (8\kappa_e\kappa_r)^{-1/2},
 
 where \(T\) is router temperature and \(\kappa_e,\kappa_r\) are regularization strengths. The collapse mode is damped by the load-balancing penalty. Numerical gradient flow and checks against automatic differentiation verify the calculation.
 
-**Limitations:** this is a *soft*, two-expert **reduced model**, not a sparse top-k transformer, and scalar experts cannot individually solve both conflicting token populations. The calculation establishes a mechanism and testable stability predictions, not a result about production LLMs. The next stage is an actual trainable MoE feed-forward layer with token-level top-k selection, capacity effects and diagnostics for functional specialization.
+**Limitations:** this is a *soft*, two-expert **reduced model**, not a sparse top-k transformer, and scalar experts cannot individually solve both conflicting token populations. The calculation establishes a mechanism and testable stability predictions, not a result about production LLMs. The accompanying token-level feed-forward experiment tests how much remains true when experts are expressive and routing is sparse. It is not a full transformer; learning token representations and larger expert populations remain open.
 
 ## Reproduce the reduced model
 
@@ -31,6 +31,28 @@ The build runs tests, generates the two-panel MoE figure and compiles `draft/mai
 
 This saves `results/moe_reduced.json` and `results/moe_reduced.pdf`. To vary the stability boundary or timescales, adjust `--temperatures`, `--expert-rate`, `--router-rate`, `--expert-decay`, `--router-decay`, `--balance`, `--seeds`, and `--steps`. Each trajectory reports conditional routing contrast, load imbalance, expert contrast, expert-router alignment and data loss. Numerical results are ignored by Git unless explicitly added.
 
+## Token-level MoE training
+
+A small PyTorch MoE feed-forward layer provides the next validation level:
+
+    ./experiment.sh moe-layer --smoke
+    ./experiment.sh moe-layer
+
+Two trainable ReLU experts receive token representations containing both the
+population label and a continuous feature. Unlike the scalar reduction,
+**either expert has the representational capacity to learn both populations**.
+We compare dense soft routing (top-2) and selected-gate top-1 routing, with
+a configurable expert capacity factor and soft load-balancing penalty.
+
+The experiment records conditional routing preference, soft and hard expert
+loads, overflowed tokens and the *alignment of routing with cross-population
+expert skill*. Mere route differentiation is not counted as functional
+specialization. Results are written to `results/moe_layer.json` and
+`results/moe_layer.pdf`. Top-1 dispatch is masked after evaluating all
+experts, for interpretability rather than computational efficiency;
+the example is not an end-to-end transformer and does not learn token
+representations.
+
 ## Earlier experiments
 
 - `./experiment.sh theory`: Arola effective-theory reproduction.
@@ -43,6 +65,7 @@ Their implementations and tests remain available. The original Arola-focused man
 ## Key files
 
 - `src/collective_learning/moe.py`: exact expected loss, gradients, stability matrix, trajectories and plotting.
+- `src/collective_learning/moe_layer.py`: trainable token-level router, feed-forward experts, top-k masks and capacity.
 - `tests/test_moe.py`: tests against PyTorch autograd, finite-difference Jacobian and symmetry/collapse modes.
 - `draft/main.tex`, `draft/refs.bib`: mathematical starting point and references.
 - `draft/figures/moe.py`: main two-panel numerical figure.

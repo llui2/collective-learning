@@ -156,13 +156,22 @@ an unexplained discovery of new transformer behavior. The nonlinear
 long-time state and finite-size noise may also depend on the
 regularization and initialization.
 
-The next test should retain token-conditional gating but replace the
-scalar experts with trainable feed-forward blocks and explicitly
-introduce sparse top-$k$ routing, capacity constraints and evolving
-token representations. Routing specialization must then be compared
-with \emph{functional} specialization and load concentration. The
-question is which features of Eqs.~\eqref{eq:jacobian}--\eqref{eq:collapse}
-survive in an actual MoE layer.
+As a first microscopic test, the accompanying code also trains
+two ReLU feed-forward experts on actual token samples. In this model
+each expert receives both the population label and the continuous
+feature, so either expert has sufficient representational capacity
+to learn both token populations. The learned router can use soft
+top-two mixing or selected-gate top-one routing with a per-expert
+token limit. We measure conditional routing, actual dispatched loads,
+overflow and class-conditional expert errors. Thus changes in routing
+are not automatically interpreted as functional specialization.
+
+This token-level model is still an isolated MoE feed-forward layer:
+the token representations are fixed, and its reference implementation
+masks expert outputs rather than implementing efficient sparse dispatch.
+The next step is to test which features of
+Eqs.~\eqref{eq:jacobian}--\eqref{eq:collapse} survive with learned
+representations inside an actual transformer.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}

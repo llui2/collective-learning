@@ -18,31 +18,28 @@
 
 \section{Task allocation}
 
-We tested whether division of labor could emerge among the coupled
-learners of Arola-Fern\'andez and Lacasa \cite{arola2024}.
-Each network learns two tasks, with allocation $a_i$ controlling its
-training effort:
-\begin{equation}
-L_i = a_i L_A(\theta_i) + (1-a_i)L_B(\theta_i)
-+ \frac{\gamma}{2}\|\theta_i\|^2,
-\qquad
-\theta_i^{t+1} = \theta_i^t - \eta\nabla L_i
+We tested whether division of labor could emerge among four
+coupled deep-linear learners \cite{arola2024}. Each network learns
+two tasks, with allocation $a_i$ controlling its training effort:
+\begin{align}
+L_i &= a_i L_A(\theta_i) + (1-a_i) L_B(\theta_i)
++ \frac{\gamma}{2}\|\theta_i\|^2, \\
+\theta_i^{t+1} &= \theta_i^t - \eta\nabla_{\theta_i}L_i
 + \frac{\eta\sigma}{N}\sum_j A_{ij}(\theta_j^t-\theta_i^t).
-\label{eq:learning}
-\end{equation}
-Here $\sigma$ controls parameter exchange. Every learner is evaluated
-on both tasks, regardless of its allocation.
+\end{align}
+Here $\sigma$ controls parameter exchange and $A_{ij}=1$ for
+distinct learners. Every learner is evaluated on both tasks.
 
 Assigning complementary specialists ($a_i=0$ or $1$) gives a
 \emph{transient learning-speed advantage} over generalists
-($a_i=1/2$) when coupling is sufficient (Fig.~\ref{fig:results}a).
+($a_i=1/2$) when coupling is sufficient (Fig.~\ref{fig:results}(a)).
 Without coupling, specialists cannot learn their unassigned task.
 
 We then let individual allocations mutate, retaining a mutation
 when a short validation rollout improved collective loss.
 This rule did not discover the beneficial division of labor:
 the initially faster adaptation later fell behind generalists
-(Fig.~\ref{fig:results}b).
+(Fig.~\ref{fig:results}(b)).
 
 \begin{figure}[htb!]
 \centering

@@ -8,6 +8,5 @@ fi
 export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 export MPLBACKEND=Agg
 "$python_bin" -m unittest discover -s tests -q
-"$python_bin" draft/figures/fig1.py
-"$python_bin" draft/figures/fig2.py
+"$python_bin" draft/figures/moe.py
 (cd draft && latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex)

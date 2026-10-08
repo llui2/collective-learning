@@ -6,110 +6,163 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage[numbers]{natbib}
-\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue!65!black,urlcolor=blue!65!black]{hyperref}
 
-\title{Collective learning from coupled neural parameters}
+\title{Routing-driven symmetry breaking in a minimal mixture of experts}
 \author{}
 \date{}
 
 \begin{document}
 \maketitle
 
-\section{Microscopic dynamics}
+\section{Learning changes the interaction network}
 
-Arola-Fernández and Lacasa consider $N$ neural networks, each trained on
-private data and coupled through their parameters \cite{arola2024}.
-Let $\theta_i^\alpha$ denote one neural parameter of learner $i$ and
-$\mathcal L_i$ its local training loss. The update is
+In modern mixture-of-experts (MoE) transformers, a router chooses which
+feed-forward experts receive each token \cite{fedus2022,mixtral2024,deepseek2024}.
+Expert learning then changes the functions available to the router.
+This creates a feedback between allocation and representation learning,
+different from parameter diffusion among learners \cite{arola2024}.
+The coupled dynamics of soft routers and experts are themselves an
+active subject of theory \cite{liao2026}.
+
+The immediate question is whether an initially symmetric router--expert
+system is unstable to \emph{complementary specialization}, while remaining
+stable against \emph{load collapse}. We start from an exactly tractable
+soft-routing reduction. It is not a transformer and does not implement
+sparse top-$k$ selection; these are subsequent tests.
+
+\section{Two experts and two token populations}
+
+A token has a population label $c\in\{-1,1\}$, equally likely, and a
+scalar feature $z$ with $\langle z^2\rangle=1$. Its regression target
+is $y=cz$. Expert $i$ predicts $f_i(z)=w_i z$.
+The router sees $c$ and assigns expert 1 probability
 \begin{equation}
-\theta_i^\alpha(t+1)
-=
-\theta_i^\alpha(t)
--\eta\,\partial_{\theta_i^\alpha}\mathcal L_i
-+\frac{\eta\sigma}{N}
-\sum_j q_{ij}\left(\theta_j^\alpha-\theta_i^\alpha\right).
-\label{eq:microscopic}
+p(c)=\frac{1}{1+\exp[-(b+cq)/T]},
+\qquad p_2(c)=1-p(c).
+\label{eq:routing}
 \end{equation}
-The private data determine the local gradient, while $q_{ij}$ describes
-the interaction network.
+Here $q$ discriminates token populations, $b$ biases total expert load,
+and $T>0$ is the routing temperature. The soft-MoE prediction is
+$\hat y=[p(c)w_1+(1-p(c))w_2]z$.
 
-\section{Effective theory}
-
-For deep linear networks, Ref.~\cite{arola2024} derives an approximate
-reduction to a scalar variable $m_i$ that coarse-grains neural parameters
-across layers:
+We train both experts and the router on
 \begin{equation}
-\dot m_i
-=
-\delta_i m_i^D-m_i^{2D+1}-\hat\gamma m_i
-+\frac{\hat\sigma}{N}\sum_jq_{ij}(m_j-m_i).
-\label{eq:effective}
-\end{equation}
-Here $D$ is the number of hidden layers,
-$\delta_i=\langle \hat x_i\hat y_i\rangle$ is the effective
-input-output correlation of the private data, and
-$\hat\gamma,\hat\sigma$ are rescaled parameters.
-The disorder in $\delta_i$ is quenched, not an adaptive allocation.
-The mean effective loss has the scaling
-\begin{equation}
-\langle\hat L\rangle
-\sim \langle m^{2(D+1)}\rangle
--2\langle\delta\rangle\langle m^{D+1}\rangle.
+E=\frac12\left\langle(\hat y-y)^2\right\rangle
++\frac{\kappa_e}{2}(w_1^2+w_2^2)
++\frac{\kappa_r}{2}(q^2+b^2)
++\frac{\lambda}{2}\left(\bar p-\frac12\right)^2,
+\quad
+\bar p=\frac12\sum_{c=\pm1}p(c).
 \label{eq:loss}
 \end{equation}
-
-\begin{figure}[htb!]
-\centering
-\includegraphics[width=0.88\linewidth]{figures/fig1.pdf}
-\caption{Effective-theory baseline for $D=0,1,2$.
-(a) Mean magnetization and (b) normalized effective loss against coupling.
-Markers are means over realizations, shaded regions show one standard
-deviation, and dash-dotted curves show the adiabatic protocol.}
-\label{fig:theory}
-\end{figure}
-
-In the neural baseline, each learner trains on a private MNIST digit
-class and is evaluated on a common test distribution. The stored neural
-runs use a short, nonadiabatic protocol rather than the full published
-training horizon.
-
-\begin{figure}[htb!]
-\centering
-\includegraphics[width=0.88\linewidth]{figures/fig2.pdf}
-\caption{Short MNIST baseline averaged over three seeds.
-(a) Mean neural parameter and (b) normalized test loss.
-These runs do not reproduce the full experimental sweep of
-Ref.~\cite{arola2024}.}
-\label{fig:mnist}
-\end{figure}
-
-\section{Weighted microscopic loss}
-
-To study allocation in a common environment, we must start from a
-microscopic loss with sample weights $w_i(x)\geq0$, normalized by
-$\langle w_i\rangle=1$:
+The last term penalizes aggregate load imbalance, but not conditional
+specialization. Expert and router parameters follow gradient descent,
+with independent learning rates:
 \begin{equation}
-\mathcal L_i^{w}
-=
-\left\langle w_i(x)\,
-\ell\bigl(f(x;\theta_i),y\bigr)\right\rangle
-+\gamma\|\theta_i\|^2.
-\label{eq:weighted}
+\dot w_i=-\eta_e\partial_{w_i}E,\qquad
+\dot q=-\eta_r\partial_qE,\qquad
+\dot b=-\eta_r\partial_bE.
+\label{eq:dynamics}
 \end{equation}
-Even for a scalar linear predictor $f(x;u)=ux$ and squared loss,
-\begin{align}
-\frac12\left\langle w_i(x)(ux-y)^2\right\rangle
-&=\frac12 C_i u^2-B_i u+\text{constant},\\
-B_i&=\langle w_i(x)xy\rangle,\qquad
-C_i=\langle w_i(x)x^2\rangle.
-\label{eq:moments}
-\end{align}
-Thus weighting modifies both the input-output correlation and the
-input covariance. The condition $\langle w_i\rangle=1$ does not fix
-$C_i$. Consequently, replacing $\delta_i$ in
-Eq.~\eqref{eq:effective} with an allocation-dependent coefficient is
-not a derived reduction. The weighted deep-linear reduction, including
-its assumptions and layerwise dynamics, remains open.
+Thus routing is learned, not an allocation imposed on the experts.
+
+Introduce the mean expert $m=(w_1+w_2)/2$ and contrast
+$d=(w_1-w_2)/2$. Since $2p(c)-1=\tanh[(b+cq)/(2T)]$,
+the expected data loss is exactly
+\begin{equation}
+E_{\rm data}
+=\frac14\sum_{c=\pm1}
+\left[m+d\tanh\left(\frac{b+cq}{2T}\right)-c\right]^2.
+\label{eq:reduced}
+\end{equation}
+The two observable routing modes are
+\begin{equation}
+S=p(1)-p(-1),\qquad C=p(1)+p(-1)-1.
+\label{eq:orders}
+\end{equation}
+Complementary routing has $S\ne0$, $C=0$; collapse of token
+allocation toward one expert has $S=0$, $C\ne0$. A functional
+specialization also needs nonzero $d$ aligned with $S$.
+
+\section{Linear stability}
+
+The fully symmetric state $m=d=q=b=0$ is stationary.
+To quadratic order, the energy reads
+\begin{equation}
+E=\frac12+\left(\frac12+\kappa_e\right)m^2
++\kappa_e d^2+\frac{\kappa_r}{2}(q^2+b^2)
+-\frac{qd}{2T}+\frac{\lambda b^2}{32T^2}
++O(\|(m,d,q,b)\|^3).
+\label{eq:expansion}
+\end{equation}
+Because $m,d$ are linear combinations of two independent expert
+weights, their gradient-flow mobilities are $\eta_e/2$, not $\eta_e$.
+The two coupled perturbations satisfy
+\begin{equation}
+\frac{d}{dt}
+\begin{bmatrix}d\\q\end{bmatrix}
+=
+\begin{bmatrix}
+-\eta_e\kappa_e&\eta_e/(4T)\\
+\eta_r/(2T)&-\eta_r\kappa_r
+\end{bmatrix}
+\begin{bmatrix}d\\q\end{bmatrix}.
+\label{eq:jacobian}
+\end{equation}
+Their larger eigenvalue is
+\begin{equation}
+\omega_+=-\frac{\eta_e\kappa_e+\eta_r\kappa_r}{2}
++\frac12\sqrt{(\eta_e\kappa_e-\eta_r\kappa_r)^2
++\frac{\eta_e\eta_r}{2T^2}}.
+\label{eq:growth}
+\end{equation}
+For positive regularization, the symmetric state is unstable to
+specialization precisely when
+\begin{equation}
+T<T_c=\frac{1}{\sqrt{8\kappa_e\kappa_r}}.
+\label{eq:critical}
+\end{equation}
+In contrast, the load-bias mode obeys
+\begin{equation}
+\dot b=-\eta_r\left(\kappa_r+
+\frac{\lambda}{16T^2}\right)b+O(\|(m,d,q,b)\|^2).
+\label{eq:collapse}
+\end{equation}
+Load balancing therefore damps collapse without suppressing the
+linear specialization instability. The symmetric mean-expert
+perturbation $m$ also decays, at rate
+$\eta_e(1/2+\kappa_e)$.
+
+\begin{figure}[tb!]
+\centering
+\includegraphics[width=0.84\linewidth]{figures/moe.pdf}
+\caption{Numerical test of the reduced router--expert dynamics.
+(a) Mean magnitude of conditional specialization with a shaded standard
+deviation over random symmetry-breaking initializations.
+(b) Largest eigenvalue of the exact linearization as a function of
+temperature. The dashed line indicates $T_c$.
+The specialization mode changes stability, while the load-bias mode is
+linearly damped.}
+\label{fig:transition}
+\end{figure}
+
+\section{Scope and next tests}
+
+This reduction intentionally gives each expert insufficient capacity to
+represent both opposing token populations: each computes only one
+scalar slope. The instability demonstrates a minimal mechanism, not
+an unexplained discovery of new transformer behavior. The nonlinear
+long-time state and finite-size noise may also depend on the
+regularization and initialization.
+
+The next test should retain token-conditional gating but replace the
+scalar experts with trainable feed-forward blocks and explicitly
+introduce sparse top-$k$ routing, capacity constraints and evolving
+token representations. Routing specialization must then be compared
+with \emph{functional} specialization and load concentration. The
+question is which features of Eqs.~\eqref{eq:jacobian}--\eqref{eq:collapse}
+survive in an actual MoE layer.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}

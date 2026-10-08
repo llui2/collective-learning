@@ -16,7 +16,8 @@ data = np.load(ROOT / "results" / "adaptive_theory.npz")
 
 if int(data["version"]) != 7:
     OUT.unlink(missing_ok=True)
-    raise SystemExit("performance figure requires adaptive theory version 7")
+    print("adaptive theory result predates performance observables; skip fig7")
+    raise SystemExit(0)
 
 x = np.log10(data["sigmas"])
 nus = data["mutation_rates"]

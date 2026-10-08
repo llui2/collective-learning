@@ -36,6 +36,8 @@ VERSION = 1
 def collective_metrics(ensemble, x, y, batch_size=1024):
     """Evaluate a uniform probability ensemble on data never used for routing."""
     total = y.numel()
+    for model in ensemble:
+        model.eval()
     correct = nll = collective_loss = individual_nll = individual_correct = 0.0
 
     for start in range(0, total, batch_size):
@@ -111,10 +113,14 @@ def run(args):
         torch.cuda.manual_seed_all(args.seed)
 
     x_train, y_train, x_test, y_test = load_mnist(device)
-    phi_train, _ = fit_shared_representation(x_train, x_test, args, device)
     train_ids, probe_ids, val_ids = split_training_pool(
         len(y_train), args.probe_samples, args.validation_samples,
         args.split_seed, device
+    )
+    # Fit PCA only on the SGD pool; the probe, validation and test examples
+    # do not influence the shared representation fitted for this experiment.
+    _, phi_train = fit_shared_representation(
+        x_train[train_ids], x_train, args, device
     )
 
     x_probe = x_train[probe_ids]

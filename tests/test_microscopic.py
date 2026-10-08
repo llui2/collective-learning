@@ -12,7 +12,7 @@ import torch
 
 from collective_learning.microscopic import (
     advance, allocation_weights, checkpoints_for, cross_loss,
-    make_population, run, task_data, training_stream, trial,
+    first_crossing, make_population, run, task_data, training_stream, trial,
 )
 
 
@@ -38,6 +38,7 @@ class MicroscopicTests(unittest.TestCase):
         args = Namespace(
             units=4, width=2, batch=4, rate=0.05, decay=0.001,
             steps=5, evaluation=16, device="cpu",
+            check_every=1, thresholds="0.2,0.1",
         )
         a = trial(args, depth=1, scale=0.1, coupling=0, seed=1)
         b = trial(args, depth=1, scale=0.1, coupling=1, seed=1)
@@ -70,15 +71,23 @@ class MicroscopicTests(unittest.TestCase):
                 seeds="0", steps=6, units=4, width=2, batch=4,
                 rate=0.05, decay=0.001, evaluation=16, device="cpu",
                 output=str(path), smoke=True, jobs=1,
+                check_every=2, thresholds="0.2,0.1",
             )
             result = run(args)
             self.assertEqual(len(result), 4)
             self.assertEqual(len(result[-1]["history"][-1]["specialists"]["cross_loss"]), 4)
-            self.assertEqual(checkpoints_for(6)[-1], 6)
+            self.assertEqual(checkpoints_for(6, 2), [0, 2, 4, 6])
             self.assertTrue(path.with_suffix(".pdf").exists())
             saved = json.loads(path.read_text())
             self.assertTrue(saved["complete"])
             self.assertEqual(len(saved["trials"]), 4)
+            summary = json.loads(
+                path.with_name("smoke_summary.json").read_text()
+            )
+            self.assertTrue(summary["complete"])
+            self.assertEqual(len(summary["trials"]), 4)
+            self.assertEqual(len(summary["groups"]), 2)
+            self.assertIn("0.2", summary["trials"][0]["first_crossing"])
 
     def test_parallel_run_is_reproducible(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -87,12 +96,28 @@ class MicroscopicTests(unittest.TestCase):
                 seeds="0", steps=4, units=4, width=2, batch=4,
                 rate=0.05, decay=0.001, evaluation=8, device="cpu",
                 jobs=2, output=str(Path(directory) / "parallel.json"),
-                smoke=False,
+                smoke=False, check_every=2, thresholds="0.2,0.1",
             )
             trials = run(args)
             self.assertEqual(len(trials), 2)
             self.assertEqual(trials[0]["history"][0]["advantage"], 0)
             self.assertTrue(Path(args.output).with_suffix(".pdf").exists())
+            self.assertEqual(
+                len(json.loads(
+                    Path(args.output).with_name("parallel_summary.json").read_text()
+                )["trials"]), 2
+            )
+
+    def test_first_passage_censors_nonlearners(self):
+        history = [
+            {"step": 0, "uniform": {"individual_loss": 0.5}},
+            {"step": 10, "uniform": {"individual_loss": 0.24}},
+            {"step": 20, "uniform": {"individual_loss": 0.18}},
+            {"step": 30, "uniform": {"individual_loss": 0.22}},
+        ]
+        self.assertEqual(first_crossing(history, "uniform", 0.25), 10)
+        self.assertEqual(first_crossing(history, "uniform", 0.2), 20)
+        self.assertIsNone(first_crossing(history, "uniform", 0.1))
 
 
 if __name__ == "__main__":

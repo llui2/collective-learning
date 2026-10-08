@@ -1,6 +1,6 @@
 # Collective learning
 
-Reproduction of [Arola-Fernández and Lacasa, *Effective theory of collective deep learning*](https://doi.org/10.1103/PhysRevResearch.6.L042040), *Physical Review Research* **6**, L042040 (2024). The tracked MNIST baseline comprises three short nonadiabatic seeds, not the full published training horizon.
+Reproduction of [Arola-Fernández and Lacasa, *Effective theory of collective deep learning*](https://doi.org/10.1103/PhysRevResearch.6.L042040), *Physical Review Research* **6**, L042040 (2024). The retained MNIST baseline comprises three short nonadiabatic seeds, not the full published training protocol.
 
 ## Setup
 
@@ -10,46 +10,45 @@ Requires Python 3.11+, LaTeX and latexmk:
     .venv/bin/python -m pip install -r requirements.txt
     ./build.sh
 
-The build checks the code, regenerates two baseline figures from retained data and compiles `draft/main.pdf`. It does not train, pull or push. Recalculate baseline experiments explicitly with `./experiment.sh theory` (expensive) or `DEVICE=cuda ./experiment.sh mnist`. On Minerva, use `./setup-minerva.sh` to install CUDA-compatible PyTorch.
+The build runs tests and regenerates baseline figures and `draft/main.pdf`; it does not train, pull or push. Recalculate the expensive theory ensemble explicitly with `./experiment.sh theory`, or the short MNIST baseline with `DEVICE=cuda ./experiment.sh mnist`. On Minerva, `./setup-minerva.sh` installs CUDA-compatible PyTorch when needed.
 
-## Finite-time microscopic experiment
+## Finite-time specialization experiment
 
     ./experiment.sh microscopic --smoke
     ./experiment.sh microscopic --jobs 12
 
-This is a controlled test of a possible *transient* specialization advantage. Learners share the deep-linear target $y=x$ on two orthogonal input tasks, and every learner can represent both tasks. There are four coupled networks with independent initial weights, shared across conditions. No adaptive effective equation is assumed.
+The current question is whether **fixed specialization shortens the time for each individual learner to generalize across both tasks**, and whether parameter diffusion contributes beyond the initial benefit of concentrated training. Evolution of allocations is disabled until a robust advantage is established.
 
-Only the training allocation changes:
+The pilot uses four jointly capable, two-layer linear networks learning the shared identity teacher on two independent task classes. Two identical populations receive identical model initializations, training minibatches, total local learning budgets and SGD updates: uniform learners divide effort equally, while specialists study one task exclusively. Diffusion between corresponding parameters can transmit information on the task a specialist never studies. We evaluate every learner on both tasks, never an ensemble prediction.
 
-- **Uniform** learners divide their local effort equally between tasks.
-- **Specialists** train on exactly one task each (two learners per task).
+The focused default tests one hidden layer, weight initialization scales 0.03 and 0.1, coupling strengths 0, 0.2, 1 and 3, and 12 paired seeds, for 600 updates. Losses are measured on an independently generated test set every 10 updates. The **predeclared thresholds are 0.2 (primary) and 0.1 (secondary)** for mean individual test loss. The first observed checkpoint at or below each threshold is the measured hitting time.
 
-Both receive identical minibatches, initial weights, SGD step counts and total local loss weight. Parameters interact through the original simultaneous diffusion law. The comparison uses each learner's **mean individual generalization error**, not an averaged ensemble prediction. We also record specialists' errors on the studied and unstudied tasks; the latter checks coupling-mediated transfer against $\sigma=0$.
+A failed threshold crossing is stored as `null` (right-censored), **not as a successful crossing at the final update**. To compare paired experiments when one run never reaches a threshold, we also report the finite-horizon *restricted speedup*
+`min(T_uniform, H) - min(T_specialists, H)`, with `H=600`. Positive values indicate an earlier threshold crossing by specialists within the observed horizon; a value of zero can also mean both populations failed. Each summary includes the number of successful crossings by strategy and the number of pairs that both succeeded. Checkpoint resolution limits timing accuracy.
 
-The default exploratory scan varies hidden linear layers `D=0,1,2`, initial parameter scales `0.03,0.1,0.3`, coupling `0,0.2,1,3`, and two paired seeds. Every trial records eleven or more logarithmically spaced checkpoints over 400 SGD updates, including $t=0$ and $t=400$. The difference
+The experiment writes:
+- `results/microscopic_speed.json`: complete individual-loss, transfer and diversity trajectories for local examination.
+- `results/microscopic_speed_summary.json`: compact individual first-passage times, censoring, group averages, spread, restricted speedups and paired seed identifiers.
+- `results/microscopic_speed.pdf`: two-panel diagnostic (learning curves and restricted speedup versus coupling).
 
-    advantage(t) = individual_loss_uniform(t) - individual_loss_specialists(t)
+You can adjust the replication protocol explicitly:
 
-is positive exactly when fixed specialization improves mean individual generalization. The experiment generates one incremental `results/microscopic_timescales.json` containing the full cross-task histories and one two-panel `results/microscopic_timescales.pdf` showing a representative slice (middle depth and initial scale). The plots show mean and standard deviation across seeds; results at other depths/scales remain in JSON.
+    ./experiment.sh microscopic --jobs 12 --seeds 0,1,2,3 --steps 800 --check-every 5
 
-Independent trials can use parallel CPU workers on Minerva with `--jobs 12` (a single worker is the default); use `--jobs 1` for CUDA. A custom, longer scan can use:
+**Do not select thresholds post hoc based on the results.** The scanned couplings and initializations are exploratory comparisons, and 12 seeds are not enough to infer a universal phase diagram. In particular, positive specialization advantage without coupling does not establish collective transfer; off-task loss of specialists and additional benefit relative to the uncoupled condition should be considered separately.
 
-    ./experiment.sh microscopic --jobs 12 --depths 1,2 --scales 0.03,0.1 --couplings 0,0.3,1,2 --seeds 0,1,2 --steps 800
+When completed on Minerva, push only the compact summary (the full trajectories can be several MB):
 
-The JSON and PDF are ignored by Git. To share only this experiment for analysis:
-
-    git add -f results/microscopic_timescales.json
-    git commit -m "Add finite-time specialization scan"
+    git add -f results/microscopic_speed_summary.json
+    git commit -m "Add paired learning-speed results"
     git push origin main
 
-This is a diagnostic pilot. The scan is exploratory and can select spurious apparent advantages across many conditions. Finite horizons and deep-linear initialization matter, and task weighting also changes stochastic-gradient variance. **Evolution of allocations remains disabled** until there is a reproducible fixed-specialization advantage. Earlier evolutionary pilots are retained in Git history, not the working experiment.
+## Files
 
-## Structure
-
-- `src/collective_learning/core.py`: baseline coupled SGD, optional weighted local losses.
-- `src/collective_learning/theory.py`: baseline effective equations.
-- `src/collective_learning/mnist.py`: short neural MNIST reproduction.
-- `src/collective_learning/microscopic.py`: time/depth/initialization/coupling scan.
-- `draft/main.tex`: baseline manuscript and open effective-reduction question.
+- `src/collective_learning/core.py`: baseline diffusive coupled SGD and weighted local loss.
+- `src/collective_learning/theory.py`: original effective equations.
+- `src/collective_learning/mnist.py`: short MNIST baseline.
+- `src/collective_learning/microscopic.py`: focused learning-speed and coupling comparison.
+- `draft/main.tex`: baseline manuscript and open weighted-effective-theory question.
 - `results/theory_baseline.npz`, `results/mnist_quick_seed*.json`: retained baseline data.
-- `tests/`: deterministic learning, coupling and experiment checks.
+- `tests/`: learning and reproducibility checks.

@@ -12,10 +12,10 @@ export MPLBACKEND=Agg
 if command -v latexmk >/dev/null 2>&1; then
   "$python_bin" draft/figures/arola_results.py
   "$python_bin" draft/figures/fig1.py
-  "$python_bin" draft/figures/fig2.py
+  rm -f draft/arola_results.pdf draft/arola_baseline.pdf
   (
     cd draft
-    for name in main arola_results arola_baseline; do
+    for name in main arola; do
       latexmk -pdf -interaction=nonstopmode -halt-on-error "$name.tex"
     done
   )

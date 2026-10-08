@@ -11,6 +11,7 @@ results/*.pth
 results/*.ckpt
 draft/figures/*.pdf
 draft/main.pdf
+draft/arola.pdf
 draft/arola_results.pdf
 draft/arola_baseline.pdf
 *.aux

@@ -363,19 +363,22 @@ def numbers(value, cast):
 def run(args):
     if args.smoke:
         args.depths, args.scales, args.couplings, args.seeds = (
-            "0,1", "0.1", "0,0.6", "0"
+            "1", "0.03", "0,1", "0,1"
         )
         args.steps, args.batch, args.evaluation = 6, 4, 16
-        if args.output == "results/microscopic_timescales.json":
+        args.check_every = 2
+        if args.output == "results/microscopic_speed.json":
             args.output = "results/microscopic_smoke.json"
 
     depths = numbers(args.depths, int)
     scales = numbers(args.scales, float)
     couplings = numbers(args.couplings, float)
     seeds = numbers(args.seeds, int)
+    thresholds = numbers(args.thresholds, float)
     if (args.units < 2 or args.units % 2 or args.width < 2
             or args.steps < 1 or args.batch < 1 or args.evaluation < 1
-            or args.jobs < 1
+            or args.check_every < 1 or args.jobs < 1
+            or any(not np.isfinite(v) or v <= 0 for v in thresholds)
             or args.rate <= 0 or args.decay < 0
             or any(d < 0 for d in depths)
             or any(not np.isfinite(s) or s <= 0 for s in scales)
@@ -388,6 +391,7 @@ def run(args):
     if args.device.type == "cpu":
         torch.set_num_threads(1)
     output = Path(args.output)
+    summary_path = output.with_name(output.stem + "_summary.json")
     output.parent.mkdir(parents=True, exist_ok=True)
     config = dict(vars(args), device=str(args.device))
     trials = []
@@ -419,22 +423,32 @@ def run(args):
             output.write_text(json.dumps({
                 "config": config, "complete": False, "trials": trials
             }, indent=2))
+            summary_path.write_text(json.dumps(
+                summarize(trials, args, complete=False), indent=2
+            ))
 
     output.write_text(json.dumps({
         "config": config, "complete": True, "trials": trials
     }, indent=2))
-    plot(trials, output.with_suffix(".pdf"))
-    print(f"Saved {output} and {output.with_suffix('.pdf')}")
+    summary_path.write_text(json.dumps(
+        summarize(trials, args, complete=True), indent=2
+    ))
+    plot(trials, args, output.with_suffix(".pdf"))
+    print(f"Saved {output}, {summary_path} and {output.with_suffix('.pdf')}")
     return trials
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--depths", default="0,1,2", help="Hidden linear layers")
-    parser.add_argument("--scales", default="0.03,0.1,0.3")
+    parser.add_argument("--depths", default="1", help="Hidden linear layers")
+    parser.add_argument("--scales", default="0.03,0.1")
     parser.add_argument("--couplings", default="0,0.2,1,3")
-    parser.add_argument("--seeds", default="0,1")
-    parser.add_argument("--steps", type=int, default=400)
+    parser.add_argument("--seeds", default=",".join(str(i) for i in range(12)))
+    parser.add_argument("--steps", type=int, default=600)
+    parser.add_argument("--check-every", type=int, default=10,
+                        help="Checkpoint interval; crossing times resolved to this interval")
+    parser.add_argument("--thresholds", default="0.2,0.1",
+                        help="Predeclared individual-loss crossing thresholds")
     parser.add_argument("--units", type=int, default=4)
     parser.add_argument("--width", type=int, default=2)
     parser.add_argument("--batch", type=int, default=32, help="Samples per task per step")
@@ -443,7 +457,7 @@ def parse_args():
     parser.add_argument("--evaluation", type=int, default=256)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--jobs", type=int, default=1, help="Parallel CPU trials")
-    parser.add_argument("--output", default="results/microscopic_timescales.json")
+    parser.add_argument("--output", default="results/microscopic_speed.json")
     parser.add_argument("--smoke", action="store_true")
     return parser.parse_args()
 

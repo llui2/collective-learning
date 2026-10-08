@@ -48,7 +48,8 @@ def statistics(models, allocation, test):
 
 
 def trial(args, scale, coupling, window, seed):
-    if args.device.type == "cpu":
+    device = torch.device(args.device)
+    if device.type == "cpu":
         torch.set_num_threads(1)
     initial = make_population(
         args.units, 1, args.width, scale, seed, args.device

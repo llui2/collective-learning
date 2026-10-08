@@ -18,13 +18,13 @@ where \(T\) is router temperature and \(\kappa_e,\kappa_r\) are regularization s
 
 ## Reproduce the reduced model
 
-Requires Python 3.11+, NumPy, PyTorch (for tests), Matplotlib and LaTeX/latexmk:
+Requires Python 3.11+, NumPy, PyTorch (for tests), and Matplotlib. LaTeX and `latexmk` are optional locally (required in CI):
 
     python3 -m venv .venv
     .venv/bin/python -m pip install -r requirements.txt
     ./build.sh
 
-The build runs tests, generates the two-panel MoE figure and compiles `draft/main.pdf`. It does not launch the large neural experiments or push to GitHub. Run the separate reduced-model experiment with:
+The build runs tests and generates the two-panel MoE figure. If `latexmk` is installed, it also compiles `draft/main.pdf`; otherwise it reports that PDF compilation was skipped without failing the numerical build. To require manuscript compilation, use `REQUIRE_LATEX=1 ./build.sh`. On Ubuntu, the optional packages are `latexmk`, `texlive-latex-recommended`, and `texlive-fonts-recommended`. It does not launch large neural experiments or push to GitHub. Run the separate reduced-model experiment with:
 
     ./experiment.sh moe --smoke
     ./experiment.sh moe

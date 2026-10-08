@@ -9,4 +9,12 @@ export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 export MPLBACKEND=Agg
 "$python_bin" -m unittest discover -s tests -q
 "$python_bin" draft/figures/moe.py
-(cd draft && latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex)
+if command -v latexmk >/dev/null 2>&1; then
+  (cd draft && latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex)
+elif [[ "${REQUIRE_LATEX:-0}" == "1" ]]; then
+  echo "Error: latexmk is required but not installed." >&2
+  exit 127
+else
+  echo "Skipping manuscript PDF: latexmk not installed (tests and figures succeeded)." >&2
+  echo "Install latexmk or set REQUIRE_LATEX=1 to require PDF compilation." >&2
+fi

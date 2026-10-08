@@ -24,4 +24,4 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y latexmk texlive-latex-recommended texlive-fonts-recommended
       - name: Check imports, tests, figures, manuscript
-        run: PYTHON=python ./build.sh
+        run: REQUIRE_LATEX=1 PYTHON=python ./build.sh

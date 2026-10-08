@@ -204,15 +204,14 @@ The equally weighted collective prediction is
   `S_sample`, normalized routing entropy and the gradient-budget error.
 
 After pulling the completed results, `./build.sh` creates
-`draft/figures/fig8.pdf` (validation improvement in collective loss and
-validation accuracy (percentage points), **matched uniform collective loss minus adaptive collective loss**) and
-`draft/figures/fig9.pdf` (routing differentiation and entropy), and
-`draft/figures/fig10.pdf` (time-resolved collective gain and differentiation
-at intermediate coupling). For Fig. 8,
-positive values mean the adaptive learners **outperformed** uniform learning
-at the same coupling, time, initialization and data stream. Both plots
-display all completed conditions at one common SGD horizon and show
-seed-to-seed standard deviations when multiple seeds exist.
+`draft/figures/fig8.pdf` (collective-loss improvement and ensemble-accuracy
+advantage over matched uniform learning), `draft/figures/fig9.pdf`
+(routing differentiation and entropy), and `draft/figures/fig10.pdf`
+(time-resolved collective gain and differentiation at intermediate coupling).
+Positive values in Fig. 8 indicate improvement by adaptive routing at the
+same coupling, time, initialization and minibatch stream. The plots use
+validation data, share a common SGD horizon, and show seed-to-seed standard
+deviations when more than one seed is available.
 
 A positive performance gain is an empirical question. These scripts do
 not presume it exists or claim that a specialized state must improve

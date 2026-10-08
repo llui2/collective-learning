@@ -19,6 +19,10 @@ case "${1:-}" in
         --output "results/mnist_quick_seed${seed}.json"
     done
     ;;
+  moe-layer)
+    shift
+    "$python_bin" -m collective_learning.moe_layer "$@"
+    ;;
   moe)
     shift
     "$python_bin" -m collective_learning.moe "$@"
@@ -39,7 +43,7 @@ case "${1:-}" in
       --smoke --device "${DEVICE:-cpu}" --output results/mnist_smoke.json
     ;;
   *)
-    echo "Usage: ./experiment.sh {theory|mnist|moe|microscopic|adaptive|smoke}" >&2
+    echo "Usage: ./experiment.sh {theory|mnist|moe|moe-layer|microscopic|adaptive|smoke}" >&2
     exit 2
     ;;
 esac

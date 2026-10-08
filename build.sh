@@ -43,6 +43,10 @@ fi
 # fig6 uses only complete, step-matched adaptive/frozen pairs.
 "$python_bin" draft/figures/fig6.py
 
+# Performance from actual coupled neural networks, compared with matched controls.
+"$python_bin" draft/figures/fig8.py
+"$python_bin" draft/figures/fig9.py
+
 mnist_results=(results/mnist_seed*.json results/mnist_quick_seed*.json)
 if (( ${#mnist_results[@]} > 0 )); then
   "$python_bin" draft/figures/fig2.py

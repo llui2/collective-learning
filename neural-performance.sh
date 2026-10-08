@@ -64,7 +64,7 @@ run_case() {
   if [[ "$control" == "adaptive" ]]; then
     suffix="${suffix}_r${rate_key}_e${exp_key}"
   fi
-  local out="results/neural_performance_${control}_${suffix}.json"
+  local out="results/neural_performance_${mode}_${control}_${suffix}.json"
 
   if [[ -s "$out" && "${FORCE:-0}" != "1" ]]; then
     if "$python_bin" - "$out" "$steps" "$control" "$sigma" "$rate" "$exploration" <<'PY'

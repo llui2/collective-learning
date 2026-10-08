@@ -1,7 +1,8 @@
 """Two-task deep-linear learners with evolving microscopic learning allocation.
 
-Strategies compete by their effect on future population validation error.
-No differentiation reward, effective closure, or presumed collective gain is used.
+Strategies compete by their effect on future ensemble validation error.
+The rank-one bottleneck cannot represent the rank-two identity teacher.
+No differentiation reward, effective closure, or presumed gain is imposed.
 """
 
 import argparse
@@ -18,16 +19,16 @@ from .core import coupled_sgd_step
 
 
 def squared_loss(prediction, target):
-    return 0.5 * (prediction[:, 0] - target).square()
+    return 0.5 * (prediction - target).square().sum(dim=1)
 
 
 def task_data(samples, generator, device):
-    """Two orthogonal input classes with the same target y=x[0]+x[1]."""
+    """Two orthogonal classes for the rank-two teacher y=(x[0], x[1])."""
     z = torch.randn((2, samples), generator=generator)
     x = torch.zeros((2, samples, 2))
     x[0, :, 0] = z[0]
     x[1, :, 1] = z[1]
-    return [(x[k].to(device), z[k].to(device)) for k in range(2)]
+    return [(x[k].to(device), x[k].to(device)) for k in range(2)]
 
 
 def training_stream(steps, batch_size, generator, device):
@@ -37,7 +38,7 @@ def training_stream(steps, batch_size, generator, device):
     x[:, 1, :, 1] = z[:, 1]
     return [
         (x[t].reshape(2 * batch_size, 2).to(device),
-         z[t].reshape(2 * batch_size).to(device))
+         x[t].reshape(2 * batch_size, 2).to(device))
         for t in range(steps)
     ]
 
@@ -74,13 +75,25 @@ def cross_loss(models, data):
     ])
 
 
+@torch.no_grad()
+def ensemble_loss(models, data):
+    """Loss of the mean prediction, distinct from mean individual loss."""
+    return float(np.mean([
+        float(squared_loss(
+            torch.stack([model(x) for model in models]).mean(dim=0), y
+        ).mean())
+        for x, y in data
+    ]))
+
+
 def record(round_idx, models, allocations, data):
     entry = {"round": round_idx}
     for name in models:
         a = allocations[name]
         matrix = cross_loss(models[name], data)
         entry[name] = {
-            "loss": float(matrix.mean()),
+            "individual_loss": float(matrix.mean()),
+            "ensemble_loss": ensemble_loss(models[name], data),
             "cross_loss": matrix.tolist(),
             "a": a.tolist(),
             "diversity": float(2 * np.var(a)),
@@ -92,9 +105,16 @@ def figure(history, out):
     t = [entry["round"] for entry in history]
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.8))
     for name in ("uniform", "frozen", "evolving"):
-        axes[0].plot(t, [entry[name]["loss"] for entry in history], label=name)
+        line, = axes[0].plot(
+            t, [entry[name]["ensemble_loss"] for entry in history], label=name
+        )
+        axes[0].plot(
+            t, [entry[name]["individual_loss"] for entry in history],
+            color=line.get_color(), linestyle=":", linewidth=1.0
+        )
     axes[0].set_xlabel("Selection rounds")
-    axes[0].set_ylabel("Mean validation loss")
+    axes[0].set_ylabel("Validation loss")
+    axes[0].set_title("Solid: ensemble; dotted: individual", fontsize=8)
     axes[0].legend(frameon=False)
 
     allocations = np.array([entry["evolving"]["a"] for entry in history])
@@ -132,7 +152,7 @@ def run(args):
     initial_models = [
         nn.Sequential(
             nn.Linear(2, args.width, bias=False),
-            nn.Linear(args.width, 1, bias=False),
+            nn.Linear(args.width, 2, bias=False),
         ).to(device)
         for _ in range(args.units)
     ]
@@ -158,7 +178,7 @@ def run(args):
 
         unchanged = advance(copy.deepcopy(models["evolving"]), a, stream, args)
         mutated = advance(copy.deepcopy(models["evolving"]), proposal, stream, args)
-        if cross_loss(mutated, validation).mean() < cross_loss(unchanged, validation).mean() - 1e-10:
+        if ensemble_loss(mutated, validation) < ensemble_loss(unchanged, validation) - 1e-10:
             models["evolving"] = mutated
             allocations["evolving"] = proposal
             accepted += 1
@@ -182,7 +202,8 @@ def run(args):
     for name in allocations:
         summary = result["test"][name]
         print(
-            f"{name:8s} test_loss={summary['loss']:.5f} "
+            f"{name:8s} individual_loss={summary['individual_loss']:.5f} "
+            f"ensemble_loss={summary['ensemble_loss']:.5f} "
             f"diversity={summary['diversity']:.5f} "
             f"allocations={np.round(allocations[name], 3).tolist()}"
         )
@@ -192,11 +213,11 @@ def run(args):
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--coupling", type=float, default=0.6)
+    p.add_argument("--coupling", type=float, default=0.03)
     p.add_argument("--rounds", type=int, default=60)
     p.add_argument("--window", type=int, default=20, help="SGD steps per selection round")
     p.add_argument("--units", type=int, default=4)
-    p.add_argument("--width", type=int, default=2)
+    p.add_argument("--width", type=int, default=1, help="rank-one bottleneck")
     p.add_argument("--batch", type=int, default=32, help="examples per task per SGD step")
     p.add_argument("--rate", type=float, default=0.08, help="SGD learning rate")
     p.add_argument("--decay", type=float, default=0.001)

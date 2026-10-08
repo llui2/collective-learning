@@ -38,10 +38,12 @@ The proposed next step is a **derivation** from the weighted microscopic neural 
 
 ## Microscopic allocation experiment
 
-Run `./experiment.sh microscopic --coupling 0.6` and
+Run `./experiment.sh microscopic --coupling 0.03` and
 `./experiment.sh microscopic --coupling 0 --output results/uncoupled.json`.
-This uses a small population of **two-layer linear neural networks** learning
-one common regression target on two orthogonal input classes. Each learner
+This uses a population of **rank-one, two-layer deep-linear networks** learning
+the rank-two target $y=x$ on two orthogonal input classes.
+Because each learner has a rank-one bottleneck, it cannot fit both directions
+perfectly, even with unlimited training. This is an explicit capacity constraint. Each learner
 receives the same examples, but its fraction `a[i]` of learning effort on
 the first class may evolve. The **local loss** is sample-weighted squared
 error and the **coupling** is the original simultaneous parameter diffusion.
@@ -51,13 +53,18 @@ fixed slightly heterogeneous allocation, and allocation mutation-selection.
 At each generation a proposed mutation to one learner's allocation is
 compared against the unchanged strategy. Both branches receive identical
 training samples and an identical number of neural updates. Selection uses
-the **population-average validation loss**, not a reward for diversity.
+the **validation loss of the mean network prediction** (an ensemble), not a
+reward for diversity. We record this separately from the **mean individual
+validation loss**, which measures each learner's own competence.
 A separate test set is evaluated only after training.
 
 The command writes `results/microscopic.json` (allocation trajectories and
-cross-task loss matrices) and `results/microscopic.pdf` (validation loss and
-allocation trajectories). Generated files are ignored by Git. This is a
+cross-task individual loss matrices and ensemble loss) and
+`results/microscopic.pdf` (validation losses and allocation trajectories). Generated files are ignored by Git. This is a
 mechanistic **pilot**, not a derived adaptive effective theory. Its selection
-rule uses extra validation data and counterfactual computation; any apparent
-benefit requires confirmation on the untouched test set, with multiple seeds
-and matched computational budgets before interpreting it as a learning gain.
+rule uses extra validation data and counterfactual computation. Ensemble
+prediction is an additional readout, distinct from the paper's parameter
+diffusion and individual generalization. An ensemble gain alone does not
+demonstrate a collective-learning advantage from coupling.
+Multiple seeds, uncoupled controls and matched computational budgets are needed
+before interpreting differences as a learning benefit.
